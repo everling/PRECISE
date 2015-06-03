@@ -16,6 +16,7 @@ public class CreateLexicon {
 			System.out.println("Optional:\n\t-m (manually input synonyms)");
 			System.out.println("\t-a (allow synonyms of relations and attributes)");
 			System.out.println("\t-v (allow synonyms of values)");
+			System.out.println("\t-s (lemmatize values)");
 			return;
 		}
 		
@@ -26,6 +27,7 @@ public class CreateLexicon {
 		boolean manual = false;
 		boolean synonymsRelAtt = false;
 		boolean synonymsVal = false;
+		boolean lemmatizeValues = false;
 		
 		for(int i = 3; i < args.length; i++){
 			if(args[i].startsWith("-m"))
@@ -34,12 +36,14 @@ public class CreateLexicon {
 				synonymsRelAtt = true;
 			if(args[i].startsWith("-v"))
 				synonymsVal = true;
+			if(args[i].startsWith("-s"))
+				lemmatizeValues = true;
 		}
 		
     	try {
 			Lexicon.init(wordNetPath);
 			Lexicon.loadElements(databaseInput);
-			Lexicon.buildLexiconMappings(manual,synonymsRelAtt, synonymsVal);
+			Lexicon.buildLexiconMappings(manual,synonymsRelAtt, synonymsVal,lemmatizeValues);
 			Lexicon.saveLexicon(databaseOutput);
 		} catch (IOException e) {
 			e.printStackTrace();

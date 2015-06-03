@@ -39,6 +39,7 @@ public class ModifyGUI implements Runnable, ActionListener, ListSelectionListene
 	JButton remove;
 	JTextField dbName;
 	JButton save;
+	JButton pkey;
 	
 	JTextField joinPathInput;
 	
@@ -110,6 +111,11 @@ public class ModifyGUI implements Runnable, ActionListener, ListSelectionListene
         save.addActionListener(this);
         f.add(save);
         
+        pkey = new JButton("Make primary key");
+        pkey.addActionListener(this);
+        f.add(pkey);
+        
+        
         f.pack();
         f.setVisible(true);
     }
@@ -171,6 +177,21 @@ public class ModifyGUI implements Runnable, ActionListener, ListSelectionListene
 		}
 		if(e.getSource().equals(save)){
 			Lexicon.saveLexicon(dbName.getText());
+		}
+		if(e.getSource().equals(pkey)){
+			if(elements.getSelectedValue() != null){
+				Element em = (Element) elements.getSelectedValue();
+				if(em.getType() == Element.TYPE_ATTRIBUTE && em.getCompatible() != null){
+					for(Element p: em.getCompatible()){
+						if(p.getType() == Element.TYPE_RELATION){
+							p.setPrimaryKey(em.getName());
+							System.out.println("Primary key for :"+p +" set to " +em);
+						}
+					}
+				}
+
+			}
+			
 		}
 		
 	}

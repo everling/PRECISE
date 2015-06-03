@@ -162,12 +162,12 @@ public class Lexicon implements java.io.Serializable{
 	/**
 	 * Tokenize every element and set up mappings word-token and token-element
 	 */
-	public static void buildLexiconMappings(boolean manual,boolean synonymsForRelAndAtt, boolean synonymsForValues){
+	public static void buildLexiconMappings(boolean manual,boolean synonymsForRelAndAtt, boolean synonymsForValues, boolean lemmatizeValues){
 		
 		manuallyPairAttributesWithWH();
 		
 		for(Element e : elements){
-			List<Token> tokens = Tokenizer.tokenizeElement(e,manual,synonymsForRelAndAtt, synonymsForValues);
+			List<Token> tokens = Tokenizer.tokenizeElement(e,manual,synonymsForRelAndAtt, synonymsForValues,lemmatizeValues);
 			
 			for(Token t : tokens){
 				addTokenMapping(t,e);
@@ -504,6 +504,32 @@ public class Lexicon implements java.io.Serializable{
 		}
 		
 		
+	}
+	
+	public static boolean canDeriveElementFromToken(List<Token> tokens, Element a){
+		for(Token t : tokens){
+			List<Element> elems = Lexicon.getElements(t);
+			if(elems != null){
+				for(Element e : elems){
+					if(e.equals(a))
+						return true;
+				}
+			}
+		}
+		return false;
+	}
+	
+	public static boolean canDeriveElementFromToken(Set<Token> tokens, Element a){
+		for(Token t : tokens){
+			List<Element> elems = Lexicon.getElements(t);
+			if(elems != null){
+				for(Element e : elems){
+					if(e.equals(a))
+						return true;
+				}
+			}
+		}
+		return false;
 	}
 	
 	

@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
 
@@ -12,6 +13,7 @@ import edu.stanford.nlp.ling.CoreAnnotations.PartOfSpeechAnnotation;
 import edu.stanford.nlp.ling.CoreAnnotations.SentencesAnnotation;
 import edu.stanford.nlp.ling.CoreAnnotations.TokensAnnotation;
 import edu.stanford.nlp.ling.CoreLabel;
+import edu.stanford.nlp.ling.IndexedWord;
 import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.pipeline.StanfordCoreNLP;
 import edu.stanford.nlp.semgraph.SemanticGraph;
@@ -101,11 +103,12 @@ public class Parser {
 			}		
 		}
 		
+		HashMap<Integer,List<Token>> semanticMarkerFuse = new HashMap<Integer,List<Token>>();
+		
 		
 		//the rest, attachment mappings
 		for(SemanticGraphEdge sge : edgeSet){
 			if(!sge.getRelation().toString().equals("nn")){
-
 				//look for existing tokens first
 				List<Token> govTokens = idMapping.get(sge.getGovernor().index());
 				List<Token> depTokens = idMapping.get(sge.getDependent().index());
@@ -113,14 +116,36 @@ public class Parser {
 				if(govTokens == null){
 					//build new token
 					govTokens = Tokenizer.tokenizeString(sge.getGovernor().originalText());
-					idMapping.put(sge.getGovernor().index(), govTokens);
+					if(govTokens.size() > 0)
+						idMapping.put(sge.getGovernor().index(), govTokens);
 					
 				}
 				if(depTokens == null){
 					//build new token
 					depTokens = Tokenizer.tokenizeString(sge.getDependent().originalText());
-					idMapping.put(sge.getDependent().index(), depTokens);
+					if(depTokens.size() > 0)
+						idMapping.put(sge.getDependent().index(), depTokens);
 				}
+				
+				//treat edges that involve semantic markers
+				if(govTokens.size() == 0 && depTokens.size() > 0){
+					
+					Integer govKey = sge.getGovernor().beginPosition();
+					List<Token> tryGov = semanticMarkerFuse.get(govKey);
+					if(tryGov != null)
+						govTokens = tryGov;
+					else
+						semanticMarkerFuse.put(govKey,depTokens);
+				}
+				else if(govTokens.size() > 0 && depTokens.size() == 0){
+					Integer depKey = sge.getDependent().beginPosition();
+					List<Token> tryDep = semanticMarkerFuse.get(depKey);
+					if(tryDep != null)
+						depTokens = tryDep;
+					else
+						semanticMarkerFuse.put(depKey,depTokens);
+				}
+				
 				
 				if(govTokens.size() > 0 && depTokens.size() > 0){
 					Attachment at = new Attachment(govTokens,depTokens,sge.getRelation().toString());
@@ -129,6 +154,7 @@ public class Parser {
 				
 			}
 		}
+		
 		try{
 			
 			if(onlyManual)
@@ -247,16 +273,7 @@ public class Parser {
 			if(B)
 				tokens = this.tokenB;
 			
-			for(Token t : tokens){
-				List<Element> elems = Lexicon.getElements(t);
-				if(elems != null){
-					for(Element e : elems){
-						if(e.equals(a))
-							return true;
-					}
-				}
-			}
-			return false;
+			return Lexicon.canDeriveElementFromToken(tokens, a);
 		}
 		
 

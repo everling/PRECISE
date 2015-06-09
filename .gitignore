@@ -3,3 +3,9 @@ bin/
 .project
 .settings
 lib/stanford-corenlp-3.3.1-models.jar
+src/precise_repl/BatchQuery.java
+src/precise_repl/CreateDB.java
+geo2
+movie
+movie2
+movie_wh

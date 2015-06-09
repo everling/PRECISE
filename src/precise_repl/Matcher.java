@@ -18,22 +18,24 @@ public class Matcher {
 	 * @param attributeTokens
 	 * @param valueTokens
 	 * @param dependencies
-	 * @param attributesToIgnore
+	 * @param elementsToIgnore
 	 * @param print
 	 * @param visualize
 	 * @param firstLevel
 	 * @return a list of nodes if valid mapping is found
 	 */
-	public static List<Node> match(Set<Token> relationTokens,Set<Token> attributeTokens, Set<Token> valueTokens, List<Attachment> dependencies, List<Element> attributesToIgnore, boolean print, boolean visualize, boolean firstLevel){
-
+	public static List<Node> match(Set<Token> relationTokens,Set<Token> attributeTokens, Set<Token> valueTokens, List<Attachment> dependencies, List<Element> elementsToIgnore, boolean print, boolean visualize, boolean firstLevel){
+		
+		firstLevel = true;
+		
 		if(attributeTokens.size() > valueTokens.size()){
 			if(print)
-				System.out.println("More attribute tokens than value tokens (" +Tokenizer.getLabel(relationTokens, attributeTokens, valueTokens,attributesToIgnore )+")");
+				System.out.println("More attribute tokens than value tokens (" +Tokenizer.getLabel(relationTokens, attributeTokens, valueTokens,elementsToIgnore )+")");
 			return null;
 		}
 
 		//build avGraph
-		ListenableDirectedWeightedGraph<Node,DefaultWeightedEdge>  avGraph = attributeValueGraph(relationTokens, attributeTokens, valueTokens, dependencies, attributesToIgnore, print);
+		ListenableDirectedWeightedGraph<Node,DefaultWeightedEdge>  avGraph = attributeValueGraph(relationTokens, attributeTokens, valueTokens, dependencies, elementsToIgnore, print);
 
 		//make max flow of av
 		EdmondsKarpMaximumFlow<Node, DefaultWeightedEdge> avFlow = maxFlow(avGraph,print);
@@ -41,10 +43,10 @@ public class Matcher {
 		//no flow solution, no mapping
 		if(avFlow == null){
 			if(print)
-				System.out.println("No max flow, incomplete graph (" +Tokenizer.getLabel(relationTokens, attributeTokens, valueTokens,attributesToIgnore)+")");
+				System.out.println("No max flow, incomplete graph (" +Tokenizer.getLabel(relationTokens, attributeTokens, valueTokens,elementsToIgnore)+")");
 
 			if(visualize && firstLevel)
-				MatchVisualizer.visualize(Tokenizer.getLabel(relationTokens, attributeTokens, valueTokens,attributesToIgnore)+" flow: 0", avGraph);
+				MatchVisualizer.visualize(Tokenizer.getLabel(relationTokens, attributeTokens, valueTokens,elementsToIgnore)+" flow: 0", avGraph);
 
 			return null;
 
@@ -53,12 +55,20 @@ public class Matcher {
 		long avFlowVal = Math.round(avFlow.getMaximumFlowValue());
 
 		//insufficient flow, not a valid mapping
-		if(avFlowVal < valueTokens.size()){
+		long avCapacity = 0;
+		
+		for(Token t : valueTokens){
+			if(t.isType(Element.TYPE_VALUE))
+				avCapacity++;
+		}
+		
+		
+		if(avFlowVal < avCapacity){
 			if(print)
-				System.out.println("max flow less than value token amount (" +Tokenizer.getLabel(relationTokens, attributeTokens, valueTokens,attributesToIgnore)+")");
+				System.out.println("max flow less than value token amount (" +Tokenizer.getLabel(relationTokens, attributeTokens, valueTokens,elementsToIgnore)+")");
 
 			if(visualize && firstLevel)
-				MatchVisualizer.visualize(Tokenizer.getLabel(relationTokens, attributeTokens, valueTokens,attributesToIgnore)+" flow: "+Math.round(avFlowVal) +"/"+valueTokens.size(), avGraph);
+				MatchVisualizer.visualize(Tokenizer.getLabel(relationTokens, attributeTokens, valueTokens,elementsToIgnore)+" flow: "+Math.round(avFlowVal) +"/"+avCapacity, avGraph);
 			return null;
 		}
 
@@ -68,7 +78,7 @@ public class Matcher {
 			List<Node> avNodes = mapNodes(avGraph, avFlow);
 
 			if(visualize)
-				MatchVisualizer.visualize(Tokenizer.getLabel(relationTokens, attributeTokens, valueTokens,attributesToIgnore)+" flow: "+Math.round(avFlowVal) +"/"+valueTokens.size(), avGraph);
+				MatchVisualizer.visualize(Tokenizer.getLabel(relationTokens, attributeTokens, valueTokens,elementsToIgnore)+" flow: "+Math.round(avFlowVal) +"/"+avCapacity, avGraph);
 			
 			return avNodes;
 		}
@@ -86,15 +96,17 @@ public class Matcher {
 		
 		if(rFlow == null || rFlow.getMaximumFlowValue() < relationTokens.size()){
 			
+			if(print)
+				System.out.println("Bad relation - attribute correspondence for :"+Tokenizer.getLabel(relationTokens, attributeTokens, valueTokens,elementsToIgnore));
 			//find the attributes that weren't matched to a relation, create new graphs recursively
 			
-			if(attributesToIgnore == null)
-				attributesToIgnore = new ArrayList<Element>();
+			if(elementsToIgnore == null)
+				elementsToIgnore = new ArrayList<Element>();
 
 			if(rFlow == null){
 				//all attribute tokens were unmatched
 				for(Element ae : activeAttribsAV){
-					List<Element> attributesToIgnoreRec = new ArrayList<Element>(attributesToIgnore);
+					List<Element> attributesToIgnoreRec = new ArrayList<Element>(elementsToIgnore);
 					attributesToIgnoreRec.add(ae);
 					List<Node> newMaxFlow = match(relationTokens, attributeTokens, valueTokens, dependencies, attributesToIgnoreRec, print,visualize,false);
 					if(newMaxFlow != null)
@@ -116,12 +128,12 @@ public class Matcher {
 				}
 
 				for(Element ae : unmatchedAttribs){
-					List<Element> attributesToIgnoreRec = new ArrayList<Element>(attributesToIgnore);
+					List<Element> attributesToIgnoreRec = new ArrayList<Element>(elementsToIgnore);
 					attributesToIgnoreRec.add(ae);
 					List<Node> newMaxFlow = match(relationTokens, attributeTokens, valueTokens, dependencies, attributesToIgnoreRec, print,visualize,false);
 					if(newMaxFlow != null){
 						if(visualize && firstLevel){
-							MatchVisualizer.visualize(Tokenizer.getLabel(relationTokens, attributeTokens, valueTokens,attributesToIgnore)+" flow: "+"/"+valueTokens.size(), avGraph);
+							MatchVisualizer.visualize(Tokenizer.getLabel(relationTokens, attributeTokens, valueTokens,elementsToIgnore)+" flow: "+"/"+valueTokens.size(), avGraph);
 
 						}
 						return newMaxFlow;
@@ -132,11 +144,13 @@ public class Matcher {
 		}
 		else{
 			//relation flow is equal to relation token size, ie all relation tokens are matched
+			if(print)
+				System.out.println("This works: "+Tokenizer.getLabel(relationTokens, attributeTokens, valueTokens,elementsToIgnore));
 			List<Node> avNodes = mapNodes(avGraph, avFlow);
 
 			if(visualize && firstLevel){
-				MatchVisualizer.visualize(Tokenizer.getLabel(relationTokens, attributeTokens, valueTokens,attributesToIgnore )+" flow: "+Math.round(avFlowVal) +"/"+valueTokens.size(), avGraph);
-				MatchVisualizer.visualize(Tokenizer.getLabel(relationTokens, attributeTokens, valueTokens,attributesToIgnore )+" flow: "+Math.round(avFlowVal) +"/"+valueTokens.size(), rGraph);
+				MatchVisualizer.visualize(Tokenizer.getLabel(relationTokens, attributeTokens, valueTokens,elementsToIgnore )+" flow: "+Math.round(avFlowVal) +"/"+valueTokens.size(), avGraph);
+				MatchVisualizer.visualize(Tokenizer.getLabel(relationTokens, attributeTokens, valueTokens,elementsToIgnore )+" flow: "+Math.round(avFlowVal) +"/"+valueTokens.size(), rGraph);
 			}
 			return avNodes;
 
@@ -214,12 +228,9 @@ public class Matcher {
 
 				if(e.getType() != Element.TYPE_VALUE)
 					continue;
-
-				if(!Lexicon.isWH(e)){
-					if(!respectsAttachmentFunctionValueToken(dependencies, tv.getToken(), e))
-						continue;
-				}
-
+				
+				if(attributesToIgnore != null && attributesToIgnore.contains(e))
+					continue;
 				successes++;
 
 				Node ev = getNodeContainingElement(evColumn,e);
@@ -251,13 +262,41 @@ public class Matcher {
 					if(attributesToIgnore != null && attributesToIgnore.contains(comp))
 						continue;
 
+					boolean implicitAttribute = !Lexicon.canDeriveElementFromToken(attributeTokens, comp);
+
 
 					if(Lexicon.isWH(ev.getElement())){
 						Token wh = new Token(Element.TYPE_VALUE,ev.getElement().getName());
-						if(!respectsAttachmentFunctionWHToken(dependencies, wh, comp))
+						
+						
+						if(implicitAttribute)
+							continue;						
+						
+						if(!respectsAttachmentV2(dependencies, ev.getElement(), comp,true))
 							continue;
 					}
+					else{
+						
+						if(implicitAttribute){
+							
+							Element rel = comp.getCompatibleOfType(Element.TYPE_RELATION);
+							
+							if(rel != null){
+								if(!respectsAttachmentV2(dependencies,rel,ev.getElement(),false))
+									continue;
+							}
+							else{
+								continue;
 
+							}
+							
+						}else{
+							//explicit attribute
+							if(!respectsAttachmentV2(dependencies,comp,ev.getElement(),false))
+								continue;
+						}
+					}
+					
 					Node ea = getNodeContainingElement(ea1, comp);
 
 					if(ea == null){
@@ -307,14 +346,10 @@ public class Matcher {
 						Node n_ea = getNodeContainingElement(ea2, e);
 						if(n_ea != null){
 							if(!avGraph.containsEdge(n_ea, at)){
-
-								//check constraints
-								if(respectsAttachmentFunctionAttributeToken(dependencies, t, n_ea.getElement())){
-
 									//add edge
 									avGraph.addEdge(n_ea, at);
 
-								}
+								//}
 							}
 						}
 					}
@@ -473,161 +508,51 @@ public class Matcher {
 
 	}
 
-	/**
-	 * WH-tokens can have two types of attachments
-	 * [WH,Relation Element] (1)
-	 * [WH,Attribute Element] (2)
-	 * @param dependencies
-	 * @param wh
-	 * @param b
-	 * @return
-	 */
-	private static boolean respectsAttachmentFunctionWHToken(List<Attachment> dependencies, Token wh, Element attributeElement){
-
+	
+	
+	private static boolean respectsAttachmentV2(List<Attachment> dependencies, Element a, Element b, boolean WH){
+		
 		boolean hasConstraint = false;
-
-		for(Attachment at : dependencies){
-
-			if(at.isWH()){
-				hasConstraint = true;
-				
-				boolean setB = false;
-				boolean contained = false;
-				if(at.containsTokenInSetA(wh)){
-					contained = true;
-					setB = true;
-				}
-				if(at.containsTokenInSetB(wh))
-					contained = true;
-
-				if(contained){
-
-					//[WH,Relation Element] (1)
-					if(at.tokenRefersToElementOfType(Element.TYPE_RELATION,setB)){
-						if(at.isAttachmentPrimaryKey(attributeElement, setB))
-							return true;
-
-					//[WH,Attribute Element] (2)
-					}else if(at.canDeriveElementFromTokens(attributeElement,setB)){
-						return true;
-					}
-
-				}
-			}
-
-		}
-
-
-		if(hasConstraint)
-			return false;
-		return true;
-
-
-	}
-
-	/**
-	 * value tokens can have two attachments
-	 * [Value token, Attribute token] (1)
-	 * [Value token, Relation token] (2)
-	 * @param dependencies
-	 * @param valueToken
-	 * @param valueElement
-	 * @return
-	 */
-	private static boolean respectsAttachmentFunctionValueToken(List<Attachment> dependencies, Token valueToken, Element valueElement){
-
-		boolean hasConstraint = false;
-
+		
+		if(dependencies.size() == 0)
+			return true;
+		
 		for(Attachment at : dependencies){
 			
-			boolean setB = false;
-			boolean contained = false;
-			if(at.containsTokenInSetA(valueToken)){
-				contained = true;
-				setB = true;
-			}
-			if(at.containsTokenInSetB(valueToken))
-				contained = true;
+			if(at.isWH() && !WH)
+				continue;
 			
 			
-			//[Value token, Attribute token] (1)
-			//[Value token, Relation token] (2)
-			if(contained && !at.isWH()){
+			if(at.canDeriveElementFromTokens(a, false)){
 				hasConstraint = true;
-				if(at.isAttachmentSameRelation(valueElement, setB))
+				if(at.canDeriveElementFromTokens(b, true))
 					return true;
-
 			}
-		}
-
-		if(hasConstraint)
-			return false;
-		return true;
-	}
-
-
-	/**
-	 * Can only have one type of attachment:
-	 * [Attribute token, Relation Token] (1)
-	 * [Attribute token, value token of primary key] (2)
-	 * @param dependencies
-	 * @param a
-	 * @param b
-	 * @return
-	 */
-	private static boolean respectsAttachmentFunctionAttributeToken(List<Attachment> dependencies, Token a, Element attributeElement){
-
-		boolean hasConstraint = false;
-
-
-		for(Attachment at : dependencies){
-
-			boolean setB = false;
-			boolean contained = false;
-			if(at.containsTokenInSetA(a)){
-				contained = true;
-				setB = true;
-			}
-			if(at.containsTokenInSetB(a))
-				contained = true;
-			
-			
-			//[Attribute token, Relation Token] (1)
-			if(contained && !at.isWH() && at.tokenRefersToElementOfType(Element.TYPE_RELATION, setB)){
+			else if(at.canDeriveElementFromTokens(a, true)){
 				hasConstraint = true;
-				if(at.isAttachmentRelation(attributeElement, setB))
+				if(at.canDeriveElementFromTokens(b, false))
+					return true;
+			}
+			else if(at.canDeriveElementFromTokens(b, false)){
+				hasConstraint = true;
+				if(at.canDeriveElementFromTokens(a, true))
+					return true;
+			}
+			else if(at.canDeriveElementFromTokens(b, true)){
+				hasConstraint = true;
+				if(at.canDeriveElementFromTokens(a, false))
 					return true;
 			}
 			
-			//[Attribute token, value token of primary key] (2)
-			if(contained && !at.isWH() && at.tokenRefersToElementOfType(Element.TYPE_VALUE,setB)){
-				List<Element> relation =  at.tokenRefersToValueOfPrimaryKey(setB);
-
-				if(relation != null && !relation.isEmpty()){
-					hasConstraint = true;
-					List<Element> attributeComp = attributeElement.getCompatible();
-
-					if(attributeComp != null && attributeComp.size() > 0){
-						for(Element rs : relation){
-							if(attributeComp.get(0).equals(rs))
-								return true;
-						}
-					}
-				}
-			}
-
-
 		}
-
-		if(hasConstraint)
-			return false;
-
-
-		return true;
+		
+		
+		
+		
+		
+		return !hasConstraint;
 	}
-
-
-
+	
 
 	private static Node getNodeContainingElement(List<Node> nodeList, Element e){
 		for(Node n : nodeList){

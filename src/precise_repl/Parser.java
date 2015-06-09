@@ -95,7 +95,7 @@ public class Parser {
 				System.out.println(""+sge +" " +sge.getGovernor() +" " +sge.getDependent());
 			String relation = sge.getRelation().toString();
 			if(relation.equals("nn")){
-				List<Token> tokens = Tokenizer.tokenizeString(sge.getDependent().originalText() +" " +sge.getGovernor().originalText());
+				List<Token> tokens = Tokenizer.tokenizeString(sge.getDependent().originalText().toLowerCase() +" " +sge.getGovernor().originalText().toLowerCase());
 				int govID  = sge.getGovernor().index();
 				int depID = sge.getDependent().index();
 				idMapping.put(govID, tokens);
@@ -115,14 +115,14 @@ public class Parser {
 				
 				if(govTokens == null){
 					//build new token
-					govTokens = Tokenizer.tokenizeString(sge.getGovernor().originalText());
+					govTokens = Tokenizer.tokenizeString(sge.getGovernor().originalText().toLowerCase());
 					if(govTokens.size() > 0)
 						idMapping.put(sge.getGovernor().index(), govTokens);
 					
 				}
 				if(depTokens == null){
 					//build new token
-					depTokens = Tokenizer.tokenizeString(sge.getDependent().originalText());
+					depTokens = Tokenizer.tokenizeString(sge.getDependent().originalText().toLowerCase());
 					if(depTokens.size() > 0)
 						idMapping.put(sge.getDependent().index(), depTokens);
 				}

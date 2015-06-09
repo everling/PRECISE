@@ -101,7 +101,7 @@ public class TestGUI implements Runnable, ActionListener {
 			System.out.println("No lexicon found.");
 			return;
 		}
-    	Lexicon.printMappings();
+    	Lexicon.printMappingsBetter();
         TestGUI se = new TestGUI();
         SwingUtilities.invokeLater(se);
     }

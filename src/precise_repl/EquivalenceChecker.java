@@ -2,6 +2,7 @@ package precise_repl;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import precise_repl.Parser.Attachment;
 import precise_repl.Tokenizer.TokenSetPair;
@@ -36,29 +37,29 @@ public class EquivalenceChecker {
 	 * @param avNodes
 	 * @param tsr
 	 * @param tsa
-	 * @param ignoredAttributes
+	 * @param ignoredElements
 	 * @param dependencies
 	 * @param finishedQueries
 	 * @param print
 	 */
-	public static void equivalenceCheck(List<Node> avNodes, TokenSetPair tsr, TokenSetPair tsa, List<Element> ignoredAttributes, List<Attachment> dependencies, List<String> finishedQueries, boolean print){
+	public static void equivalenceCheck(List<Node> avNodes, Set<Token> relationTokens, Set<Token> attributeTokens, Set<Token> valueTokens, List<Element> ignoredElements, List<Attachment> dependencies, List<String> finishedQueries, boolean print){
 		
 		if(print)
 			System.out.println("Examining equivalent flows..");
 
-		if(addMemoization(ignoredAttributes))
+		if(addMemoization(ignoredElements))
 			return;
 		
 		List<Node> activeAttributeNodes = new ArrayList<Node>();
 		for(Node n : avNodes){
-			if(n.getColumn().equals("EA"))
+			if(n.getColumn().equals("EA") || n.getColumn().equals("EV"))
 				activeAttributeNodes.add(n);
 		}
 		
 		for(Node n : activeAttributeNodes){
-			List<Element> ignoreAttributes = new ArrayList<Element>(ignoredAttributes);
-			ignoreAttributes.add(n.getElement());
-			List<Node> avNodesEQ = Matcher.match(tsr.aTokens, tsa.aTokens, tsa.bTokens, dependencies, ignoreAttributes, print,false,false);
+			List<Element> newIgnoredElements = new ArrayList<Element>(ignoredElements);
+			newIgnoredElements.add(n.getElement());
+			List<Node> avNodesEQ = Matcher.match(relationTokens, attributeTokens, valueTokens, dependencies, newIgnoredElements, print,false,false);
 			if(avNodesEQ != null){
 				if(print)
 					System.out.println("Equivalent max flow found:");
@@ -69,7 +70,7 @@ public class EquivalenceChecker {
 					if(!finishedQueries.contains(qq))
 						finishedQueries.add(qq);
 				
-				equivalenceCheck(avNodesEQ, tsr, tsa, ignoreAttributes, dependencies, finishedQueries,print);
+				equivalenceCheck(avNodesEQ, relationTokens, attributeTokens, valueTokens, newIgnoredElements, dependencies, finishedQueries,print);
 			}
 		}
 	}

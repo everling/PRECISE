@@ -72,6 +72,13 @@ public class Element implements java.io.Serializable{
 		return compatible;
 	}
 	
+	public Element getCompatibleOfType(int type){
+		for(Element e : compatible)
+			if(e.getType() == type)
+				return e;
+		return null;
+	}
+	
 	public List<Element> getSchema(){
 		return schema;
 	}

@@ -57,7 +57,8 @@ public class Tokenizer {
 			if(!Lexicon.isSyntacticMarker(stem)){
 				List<Token> tokens2 = Lexicon.getTokens(stem);
 				if(tokens2 == null){ //incomplete tokenization
-					System.out.println("no token for :" +stem);
+					if(print)
+						System.out.println("no token for :" +stem);
 					return null;
 				}
 				for(Token t : tokens2)
@@ -116,7 +117,31 @@ public class Tokenizer {
 		return toRet;
 	}
 	
-	
+	public static List<Set<Token>> classifyTokens(Set<Token> tokenization){
+		
+		Set<Token> relations = new HashSet<Token>();
+		Set<Token> attributes = new HashSet<Token>();
+		Set<Token> values = new HashSet<Token>();
+		
+		for(Token t: tokenization){
+			if(t.isType(Element.TYPE_RELATION))
+				relations.add(t);
+			if(t.isType(Element.TYPE_ATTRIBUTE))
+				attributes.add(t);
+			if(t.isType(Element.TYPE_VALUE))
+				values.add(t);
+		}
+		
+		List<Set<Token>> toRet = new ArrayList<Set<Token>>();
+		
+		toRet.add(relations);
+		toRet.add(attributes);
+		toRet.add(values);
+		
+		return toRet;
+		
+		
+	}
 	
 	/**
 	 * Since some relation tokens might also be attribute and/or value tokens there can be several interpretations
@@ -151,6 +176,8 @@ public class Tokenizer {
 			
 			Set<Token> avSet = new HashSet<Token>(tokenization);
 			avSet.removeAll(rSet);
+		
+			
 			TokenSetPair tsp = new TokenSetPair(rSet,avSet);
 			toRet.add(tsp);
 
@@ -224,7 +251,7 @@ public class Tokenizer {
 
 	public static List<Token> tokenizeString(String s){
 		Element nullElem = new Element(Element.TYPE_VALUE,s);
-		return tokenizeElement(nullElem,false,false, false);
+		return tokenizeElement(nullElem,false,false, false,true);
 	}
 	
 	/**
@@ -235,19 +262,21 @@ public class Tokenizer {
 	 * @param synonymsForValues if synonyms should be generated for values
 	 * @return return list of tokens. First in the list is the original, non-augmented set
 	 */
-	public static List<Token> tokenizeElement(Element e, boolean manual, boolean synonymsForRelAndAtt, boolean synonymsForValues){
+	public static List<Token> tokenizeElement(Element e, boolean manual, boolean synonymsForRelAndAtt, boolean synonymsForValues, boolean lemmatizeValues){
 		
 		
 		ArrayList<Token> ret = new ArrayList<Token>();
 		String[] words = splitWords(e.getName());
 		String[] token = new String[words.length];
 		
-		//stem words
+		//possibly stem words
 		for(int i = 0; i < words.length; i++){
-			String stem = Lexicon.getWordStem(words[i], POS.values());
+			String stem = words[i].toLowerCase();
+			if(e.getType() != Element.TYPE_VALUE || lemmatizeValues)
+				stem = Lexicon.getWordStem(words[i], POS.values());
 			token[i] = stem;
 		}
-	
+		
 		//remove syntactic markers
 		token = Lexicon.removeSyntacticMarkers(token);
 		

@@ -49,6 +49,9 @@ public class ModifyGUI implements Runnable, ActionListener, ListSelectionListene
 	JFrame f;
 	List<Element> relAndAtt;
 	
+	JTextField wh;
+	JButton whset;
+	
     @Override
     public void run() {
         f = new JFrame("Modify Lexicon");
@@ -58,6 +61,7 @@ public class ModifyGUI implements Runnable, ActionListener, ListSelectionListene
         List<Element> allElems = Lexicon.getAllElements();
         relAndAtt = new ArrayList<Element>();
         for(Element e : allElems){
+        	//if(e.getType() == Element.TYPE_VALUE && e.getCompatible().get(0).getName().equals("studio"))
         	if(e.getType() == Element.TYPE_RELATION || e.getType() == Element.TYPE_ATTRIBUTE)
         		relAndAtt.add(e);
         }
@@ -114,6 +118,13 @@ public class ModifyGUI implements Runnable, ActionListener, ListSelectionListene
         pkey = new JButton("Make primary key");
         pkey.addActionListener(this);
         f.add(pkey);
+        
+        wh = new JTextField("wh");
+        f.add(wh);
+        
+        whset = new JButton("Set wh");
+        whset.addActionListener(this);
+        f.add(whset);
         
         
         f.pack();
@@ -178,6 +189,11 @@ public class ModifyGUI implements Runnable, ActionListener, ListSelectionListene
 		if(e.getSource().equals(save)){
 			Lexicon.saveLexicon(dbName.getText());
 		}
+		
+		if(e.getSource().equals(whset)){
+			setWH();
+		}
+		
 		if(e.getSource().equals(pkey)){
 			if(elements.getSelectedValue() != null){
 				Element em = (Element) elements.getSelectedValue();
@@ -197,6 +213,53 @@ public class ModifyGUI implements Runnable, ActionListener, ListSelectionListene
 	}
 
 	
+	private void loadWH(){
+		Element e = relAndAtt.get(elements.getSelectedIndex());
+		
+		String txt = "";
+		
+		for(Element w : Lexicon.getWHS()){
+			List<Element> comps = w.getCompatible();
+			if(comps.contains(e))
+				txt += w.getName() +" ";
+		}
+		
+		wh.setText(txt);
+	}
+	
+	private void setWH(){
+		
+		Element e = relAndAtt.get(elements.getSelectedIndex());
+
+		String[] zz = wh.getText().split(" ");
+		
+		
+		List<Token> tokens = new ArrayList<Token>();
+		
+		
+		for(String s : zz){
+			tokens.addAll(Tokenizer.tokenizeString(s));
+		}
+				
+		Element[] whs = Lexicon.getWHS();
+		
+		for(Element whelem : whs){
+			
+			whelem.getCompatible().remove(e);
+			
+			for(Token t : tokens){
+				List<Element> elms = Lexicon.getElements(t);
+				if(elms != null && elms.contains(whelem)){
+					System.out.println(whelem +"compatible to" +e);
+					whelem.addCompatible(e);
+				}
+
+			}
+
+		}
+
+	}
+	
 	private void updateMatching(){
 		Element e = relAndAtt.get(elements.getSelectedIndex());
 		mat.clear();
@@ -212,6 +275,7 @@ public class ModifyGUI implements Runnable, ActionListener, ListSelectionListene
 		
 		if(arg0.getSource().equals(elements)){
 			updateMatching();
+			loadWH();
 		}
 	}
 }

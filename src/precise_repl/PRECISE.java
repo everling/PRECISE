@@ -86,7 +86,7 @@ public class PRECISE{
 							}
 
 						if(equivalence){
-							EquivalenceChecker.equivalenceCheck(avNodes, tsr, tsa, new ArrayList<Element>(), dependencies, finishedQueries,print);
+							EquivalenceChecker.equivalenceCheck(avNodes, tsr.aTokens, tsa.aTokens, tsa.bTokens, new ArrayList<Element>(), dependencies, finishedQueries,print);
 							if(print)
 								System.out.println("EQ check done");
 						}
@@ -94,7 +94,7 @@ public class PRECISE{
 					}
 				}	
 			}
-
+		
 		}
 		
 		
@@ -108,5 +108,10 @@ public class PRECISE{
 		
 	}
 	
+	
+	
+	public static class ErrorMsg{
+		public String msg;
+	}
 	
 }

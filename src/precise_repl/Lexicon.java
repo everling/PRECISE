@@ -39,8 +39,8 @@ public class Lexicon implements java.io.Serializable{
 	private static List<JoinPath> jps = new ArrayList<JoinPath>();
 	private static ArrayList<Element> elements;
 	
-	private static String[] syntactic_markers = new String[]{"are","the","on","a","in","is","be","of","do","with"};
-	private static Element[] wh = new Element[]{new Element(Element.TYPE_VALUE,"what"), new Element(Element.TYPE_VALUE,"where"), new Element(Element.TYPE_VALUE,"when"), new Element(Element.TYPE_VALUE,"who"),new Element(Element.TYPE_VALUE,"which")};
+	private static String[] syntactic_markers = new String[]{"are","the","on","a","in","is","be","of","do","with","by","ha"};
+	private static Element[] wh = new Element[]{new Element(Element.TYPE_VALUE,"what"), new Element(Element.TYPE_VALUE,"where"), new Element(Element.TYPE_VALUE,"when"), new Element(Element.TYPE_VALUE,"who"),new Element(Element.TYPE_VALUE,"which"),new Element(Element.TYPE_VALUE,"how")};
 
 	private static HashMap<Token,List<Element>> tokenToElements;
 	private static HashMap<String,List<Token>> wordToToken;
@@ -57,7 +57,9 @@ public class Lexicon implements java.io.Serializable{
 		return elements;
 	}
 	
-	
+	public static Element[] getWHS(){
+		return wh;
+	}
 	/**
 	 * Returns true if the supplied Element is a WH-element
 	 * @param pwh
@@ -236,6 +238,19 @@ public class Lexicon implements java.io.Serializable{
 		
 	}
 	
+	private static void remapAttributesWithWH(){
+		
+		for(Element w : wh){
+			w.getCompatible().clear();
+			
+			
+			
+		}
+		
+		
+		
+	}
+	
 	
 	public static void printMappings(){
 
@@ -257,6 +272,36 @@ public class Lexicon implements java.io.Serializable{
 			if(r.getType() == Element.TYPE_RELATION)
 				System.out.println(r +" primary key: "+r.getPrimaryKey());
 		}
+	}
+	
+	
+	public static void printMappingsBetter(){
+		
+		System.out.println("Element-Token mappings:\n");
+		
+		for(Element e : elements){
+			
+			System.out.println(e);
+			for(Entry<Token, List<Element>> ts : tokenToElements.entrySet()){
+				if(ts.getValue().contains(e)){
+					System.out.println("\t"+ts.getKey().toString());
+				}
+			}
+			System.out.println();
+		}
+		
+		System.out.println("\n\n\nWH-mappings:\n");
+		
+		for(Element whh: wh){
+			System.out.println(whh);
+			for(Element comp : whh.getCompatible()){
+				System.out.println("\t"+comp);
+			}
+		}
+		
+		
+		
+		
 	}
 	
 	/**

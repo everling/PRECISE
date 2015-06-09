@@ -50,7 +50,8 @@ public class QueryGenerator {
 			List<List<JoinPath>> joinPaths = Lexicon.getJoinPathsV2(relations,whPaired);
 			
 			for(List<JoinPath> jp : joinPaths){
-				System.out.println(Arrays.toString(jp.toArray()));
+				if(print)
+					System.out.println(Arrays.toString(jp.toArray()));
 				String s = generateQuery1(avNodes,dependencies,jp,whPaired,print);
 				if(!s.contains("*IJ"))
 					toRet.add(0, s);

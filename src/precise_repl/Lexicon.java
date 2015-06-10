@@ -39,7 +39,7 @@ public class Lexicon implements java.io.Serializable{
 	private static List<JoinPath> jps = new ArrayList<JoinPath>();
 	private static ArrayList<Element> elements;
 	
-	private static String[] syntactic_markers = new String[]{"are","the","on","a","in","is","be","of","do","with","by","ha"};
+	private static String[] syntactic_markers = new String[]{"are","the","on","a","in","is","be","of","do","with","by","ha","have"};
 	private static Element[] wh = new Element[]{new Element(Element.TYPE_VALUE,"what"), new Element(Element.TYPE_VALUE,"where"), new Element(Element.TYPE_VALUE,"when"), new Element(Element.TYPE_VALUE,"who"),new Element(Element.TYPE_VALUE,"which"),new Element(Element.TYPE_VALUE,"how")};
 
 	private static HashMap<Token,List<Element>> tokenToElements;
@@ -60,6 +60,8 @@ public class Lexicon implements java.io.Serializable{
 	public static Element[] getWHS(){
 		return wh;
 	}
+	
+	
 	/**
 	 * Returns true if the supplied Element is a WH-element
 	 * @param pwh
@@ -219,10 +221,9 @@ public class Lexicon implements java.io.Serializable{
 	/**
 	 * Makes all attributes compatible with all WH-values
 	 */
-	private static void manuallyPairAttributesWithWH(){
+	public static void manuallyPairAttributesWithWH(){
 		
 		for(Element e : elements){
-			
 			if(e.getType() == Element.TYPE_ATTRIBUTE){
 				String name = e.getName();
 				System.out.println(name);
@@ -238,13 +239,12 @@ public class Lexicon implements java.io.Serializable{
 		
 	}
 	
-	private static void remapAttributesWithWH(){
+	public static void clearWHMappings(){
 		
+		wh = new Element[]{new Element(Element.TYPE_VALUE,"what"), new Element(Element.TYPE_VALUE,"where"), new Element(Element.TYPE_VALUE,"when"), new Element(Element.TYPE_VALUE,"who"),new Element(Element.TYPE_VALUE,"which"),new Element(Element.TYPE_VALUE,"how")};
+
 		for(Element w : wh){
 			w.getCompatible().clear();
-			
-			
-			
 		}
 		
 		
@@ -435,7 +435,8 @@ public class Lexicon implements java.io.Serializable{
 				int lockIndex = 0;
 				for(int i = 0; i < elems.length; i++){
 					
-						String val = elems[i].replaceAll("'", "").trim();
+						String val = elems[i].replaceAll("'","").trim();
+
 						if(val.matches("^\\[(\\S*\\s*)*")){
 							list = true;
 							lockIndex = i;

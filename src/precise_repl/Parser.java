@@ -94,13 +94,13 @@ public class Parser {
 			if(print)
 				System.out.println(""+sge +" " +sge.getGovernor() +" " +sge.getDependent());
 			String relation = sge.getRelation().toString();
-			if(relation.equals("nn")){
+			/*if(relation.equals("nn")){
 				List<Token> tokens = Tokenizer.tokenizeString(sge.getDependent().originalText().toLowerCase() +" " +sge.getGovernor().originalText().toLowerCase());
 				int govID  = sge.getGovernor().index();
 				int depID = sge.getDependent().index();
 				idMapping.put(govID, tokens);
 				idMapping.put(depID, tokens);
-			}		
+			}	*/	
 		}
 		
 		HashMap<Integer,List<Token>> semanticMarkerFuse = new HashMap<Integer,List<Token>>();
@@ -108,7 +108,7 @@ public class Parser {
 		
 		//the rest, attachment mappings
 		for(SemanticGraphEdge sge : edgeSet){
-			if(!sge.getRelation().toString().equals("nn")){
+			if(true){
 				//look for existing tokens first
 				List<Token> govTokens = idMapping.get(sge.getGovernor().index());
 				List<Token> depTokens = idMapping.get(sge.getDependent().index());
@@ -273,7 +273,19 @@ public class Parser {
 			if(B)
 				tokens = this.tokenB;
 			
-			return Lexicon.canDeriveElementFromToken(tokens, a);
+			
+			for(Token t : tokens){
+				for(String s : t.getWords()){
+					List<Token> sParticipate = Lexicon.getTokens(s);
+					if(sParticipate != null){
+						if(Lexicon.canDeriveElementFromToken(sParticipate, a))
+							return true;
+					}
+				}
+			}
+			
+			return false;
+			//return Lexicon.canDeriveElementFromToken(tokens, a);
 		}
 		
 

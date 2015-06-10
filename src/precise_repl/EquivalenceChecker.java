@@ -57,9 +57,9 @@ public class EquivalenceChecker {
 		}
 		
 		for(Node n : activeAttributeNodes){
-			List<Element> newIgnoredElements = new ArrayList<Element>(ignoredElements);
-			newIgnoredElements.add(n.getElement());
-			List<Node> avNodesEQ = Matcher.match(relationTokens, attributeTokens, valueTokens, dependencies, newIgnoredElements, print,false,false);
+			List<Element> ignoreElements = new ArrayList<Element>(ignoredElements);
+			ignoreElements.add(n.getElement());
+			List<Node> avNodesEQ = Matcher.match(relationTokens, attributeTokens, valueTokens, dependencies, ignoreElements, print,false,false);
 			if(avNodesEQ != null){
 				if(print)
 					System.out.println("Equivalent max flow found:");
@@ -70,7 +70,7 @@ public class EquivalenceChecker {
 					if(!finishedQueries.contains(qq))
 						finishedQueries.add(qq);
 				
-				equivalenceCheck(avNodesEQ, relationTokens, attributeTokens, valueTokens, newIgnoredElements, dependencies, finishedQueries,print);
+				equivalenceCheck(avNodesEQ, relationTokens, attributeTokens, valueTokens, ignoreElements, dependencies, finishedQueries,print);
 			}
 		}
 	}

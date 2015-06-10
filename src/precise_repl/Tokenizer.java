@@ -271,9 +271,10 @@ public class Tokenizer {
 		
 		//possibly stem words
 		for(int i = 0; i < words.length; i++){
-			String stem = words[i].toLowerCase();
+			String stem = words[i];
 			if(e.getType() != Element.TYPE_VALUE || lemmatizeValues)
 				stem = Lexicon.getWordStem(words[i], POS.values());
+			stem = stem.toLowerCase();
 			token[i] = stem;
 		}
 		

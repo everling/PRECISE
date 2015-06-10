@@ -282,10 +282,16 @@ public class Matcher {
 							Element rel = comp.getCompatibleOfType(Element.TYPE_RELATION);
 							
 							if(rel != null){
-								if(!respectsAttachmentV2(dependencies,rel,ev.getElement(),false))
-									continue;
+								if(!respectsAttachmentV2(dependencies,rel,ev.getElement(),false)){
+									
+									//PRIMARY KEY TEST
+									String pKey = rel.getPrimaryKey();
+									if(!(comp.getName().equals(pKey)))
+										continue;
+
+								}
 							}
-							else{
+							else{								
 								continue;
 
 							}

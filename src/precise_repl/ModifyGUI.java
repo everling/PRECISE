@@ -200,8 +200,17 @@ public class ModifyGUI implements Runnable, ActionListener, ListSelectionListene
 				if(em.getType() == Element.TYPE_ATTRIBUTE && em.getCompatible() != null){
 					for(Element p: em.getCompatible()){
 						if(p.getType() == Element.TYPE_RELATION){
-							p.setPrimaryKey(em.getName());
-							System.out.println("Primary key for :"+p +" set to " +em);
+							
+							if(p.getPrimaryKey() != null && p.getPrimaryKey().equals(em.getName())){
+								p.setPrimaryKey("null");
+								System.out.println("Primary key for :"+p +" set to null");
+							}
+							else{
+								p.setPrimaryKey(em.getName());
+								System.out.println("Primary key for :"+p +" set to " +em);
+							}
+							
+							
 						}
 					}
 				}

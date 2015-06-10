@@ -102,7 +102,6 @@ public class TestGUI implements Runnable, ActionListener {
 			return;
 		}		
 		
-		Lexicon.reloadSyntactic();
     	Lexicon.printMappingsBetter();
         TestGUI se = new TestGUI();
         SwingUtilities.invokeLater(se);

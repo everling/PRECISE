@@ -152,7 +152,7 @@ public class ModifyGUI implements Runnable, ActionListener, ListSelectionListene
 			return;
 		}
 		Lexicon.reloadSyntactic();
-		Lexicon.printMappingsBetter();
+		Lexicon.printMappingsBetter(false);
 		
         ModifyGUI se = new ModifyGUI();
         SwingUtilities.invokeLater(se);

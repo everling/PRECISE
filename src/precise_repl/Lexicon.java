@@ -39,7 +39,7 @@ public class Lexicon implements java.io.Serializable{
 	private static List<JoinPath> jps = new ArrayList<JoinPath>();
 	private static ArrayList<Element> elements;
 	
-	private static String[] syntactic_markers = new String[]{"are","the","on","a","in","is","be","of","do","with","by","ha","has","have"};
+	private static String[] syntactic_markers = new String[]{"are","the","on","a","in","is","be","of","do","with","by","ha","has","have","some","many","`"};
 	private static Element[] wh = new Element[]{new Element(Element.TYPE_VALUE,"what"), new Element(Element.TYPE_VALUE,"where"), new Element(Element.TYPE_VALUE,"when"), new Element(Element.TYPE_VALUE,"who"),new Element(Element.TYPE_VALUE,"which"),new Element(Element.TYPE_VALUE,"how")};
 
 	private static HashMap<Token,List<Element>> tokenToElements;
@@ -62,7 +62,7 @@ public class Lexicon implements java.io.Serializable{
 	}
 	
 	public static void reloadSyntactic(){
-		syntactic_markers = new String[]{"are","the","on","a","in","is","be","of","do","with","by","ha","has","have"};
+		syntactic_markers = new String[]{"are","the","on","a","in","is","be","of","do","with","by","ha","has","have","some","many","`"};
 	}
 	
 	
@@ -279,19 +279,20 @@ public class Lexicon implements java.io.Serializable{
 	}
 	
 	
-	public static void printMappingsBetter(){
+	public static void printMappingsBetter(boolean includeValues){
 		
 		System.out.println("Element-Token mappings:\n");
 		
 		for(Element e : elements){
-			
-			System.out.println(e);
-			for(Entry<Token, List<Element>> ts : tokenToElements.entrySet()){
-				if(ts.getValue().contains(e)){
-					System.out.println("\t"+ts.getKey().toString());
+			if(includeValues || e.getType() != Element.TYPE_VALUE){
+				System.out.println(e);
+				for(Entry<Token, List<Element>> ts : tokenToElements.entrySet()){
+					if(ts.getValue().contains(e)){
+						System.out.println("\t"+ts.getKey().toString());
+					}
 				}
+				System.out.println();
 			}
-			System.out.println();
 		}
 		
 		System.out.println("\n\n\nWH-mappings:\n");
@@ -406,12 +407,15 @@ public class Lexicon implements java.io.Serializable{
 			
 			//relations and attributes
 			while(!(s = br.readLine()).startsWith("*")){
+				System.out.println(s);
 				if(s.length() > 0 && s.contains("(")){
 					String[] elems = s.split("[(),]");
 					Element rel = new Element(Element.TYPE_RELATION,elems[0].trim());
+					System.out.println(rel);
 					elements.add(rel);
 					for(int i = 1; i < elems.length; i++){
 						Element att = new Element(Element.TYPE_ATTRIBUTE, elems[i].trim(),rel);
+						System.out.println(att);
 						elements.add(att);
 						rel.addSchemaElement(att);
 					}
@@ -420,56 +424,80 @@ public class Lexicon implements java.io.Serializable{
 			
 			//values
 			while((s = br.readLine()) != null){
-				if(s.trim().equals(""))
-					continue;
 				
-				//identify relation
-				String[] elems = s.split("\\(");
+				try{
 
-				Element rel = findRelation(elems[0].trim());
-				if(rel == null)
-					continue;
-				
-				List<Element> schema = rel.getSchema();
-
-				//get values
-				elems = elems[1].split(",");
-				
-				//fix trailing prolog
-				elems[elems.length-1] = elems[elems.length-1].replaceAll("(\\)\\.)", "");
-				
-				//add value element
-				boolean list = false;
-				boolean listTurnOff = false;
-				int lockIndex = 0;
-				for(int i = 0; i < elems.length; i++){
+					System.out.println(s);
+					if(s.trim().equals(""))
+						continue;
 					
-						String val = elems[i].replaceAll("'","").trim();
+					//identify relation
+					String[] elems = s.split("\\(");
 
-						if(val.matches("^\\[(\\S*\\s*)*")){
-							list = true;
-							lockIndex = i;
-							val = val.replaceAll("\\[", "");
-						}
-						if(val.matches("(\\S*\\s*)*\\]$")){
-							listTurnOff = true;
-							val = val.replaceAll("\\]","");
-						}
-						//create value element, make compatible with relation element and its attribute element
-						Element valueElem = new Element(Element.TYPE_VALUE, val, rel, schema.get( (list)?lockIndex:i));
-						elements.add(valueElem);
-								
-						if(listTurnOff){
-							list = false;
-							listTurnOff = false;
-						}
+					Element rel = findRelation(elems[0].trim());
+					if(rel == null)
+						continue;
+					
+					List<Element> schema = rel.getSchema();
+
+					//get values
+					elems = elems[1].split(",");
+					
+					//fix trailing prolog
+					elems[elems.length-1] = elems[elems.length-1].replaceAll("(\\)\\.)", "");
+					
+					//add value element
+					boolean list = false;
+					boolean listTurnOff = false;
+					int lockIndex = 0;
+					for(int i = 0; i < elems.length; i++){
+						
+						
+						
+							String val = elems[i].trim();
+							
+							val = val.replaceAll("^\\'", "");//first single quote
+							val = val.replaceAll("\\'$", "");//last single quote
+							val = val.replaceAll("'", "`"); //SQL-friendly
+							
+							if(val.matches("^\\[(\\S*\\s*)*")){
+								list = true;
+								lockIndex = i;
+								val = val.replaceAll("\\[", "");
+							}
+							if(val.matches("(\\S*\\s*)*\\]$")){
+								listTurnOff = true;
+								val = val.replaceAll("\\]","");
+							}
+	
+							System.out.println(val);
+							//create value element, make compatible with relation element and its attribute element
+							Element valueElem = new Element(Element.TYPE_VALUE, val, rel, schema.get( (list)?lockIndex:i));
+							elements.add(valueElem);
+							System.out.println(valueElem);
+									
+							if(listTurnOff){
+								list = false;
+								listTurnOff = false;
+							}
+							
+					}
+					
+					
+				}catch(NullPointerException ne){
+					ne.printStackTrace();
 				}
+				
 			}
 				
 			br.close();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		
+		System.out.println("Finished");
+		System.out.flush();
+		
 	}
 	
 	/**

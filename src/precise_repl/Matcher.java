@@ -455,7 +455,7 @@ public class Matcher {
 	 * @param relationTokens
 	 * @param activeAttributes
 	 */
-	private static ListenableDirectedWeightedGraph<Node, DefaultWeightedEdge> relationGraph(Set<Token> relationTokens, List<Element> activeElements, List<Attachment> attachments){
+	private static ListenableDirectedWeightedGraph<Node, DefaultWeightedEdge> relationGraph(Set<Token> relationTokens, List<Element> activeAttributes, List<Attachment> attachments){
 		
 		ListenableDirectedWeightedGraph<Node, DefaultWeightedEdge> rGraph = new ListenableDirectedWeightedGraph<Node, DefaultWeightedEdge>(DefaultWeightedEdge.class);
 
@@ -477,29 +477,25 @@ public class Matcher {
 
 		//active element relations
 		List<Node> aar = new ArrayList<Node>();
-		for(Element e : activeElements){
+		for(Element e : activeAttributes){
 			for(Element comp : e.getCompatible()){
 				if(comp.getType() == Element.TYPE_RELATION){
 					
-					if(respectsAttachmentV2(attachments, e, comp, Lexicon.isWH(e))){
-						Node er = getNodeContainingElement(aar, comp);
-						if(er == null){
-							er = new Node(comp);
-							er.setColumn("ER");
-							aar.add(er);
-							rGraph.addVertex(er);
-							//possibly add edges
-							for(Node nt : rt){
-								List<Element> elems = Lexicon.getElements(nt.getToken());
-								if(elems.contains(comp)){
-									//add edge
-									rGraph.addEdge(nt, er);
-								}
+					Node er = getNodeContainingElement(aar, comp);
+					if(er == null){
+						er = new Node(comp);
+						er.setColumn("ER");
+						aar.add(er);
+						rGraph.addVertex(er);
+						//possibly add edges
+						for(Node nt : rt){
+							List<Element> elems = Lexicon.getElements(nt.getToken());
+							if(elems.contains(comp)){
+								//add edge
+								rGraph.addEdge(nt, er);
 							}
-	
 						}
-					}
-					
+					}	
 				}
 			}
 		}

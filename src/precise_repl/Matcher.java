@@ -17,16 +17,15 @@ public class Matcher {
 	 * @param relationTokens
 	 * @param attributeTokens
 	 * @param valueTokens
-	 * @param dependencies
+	 * @param attachments
 	 * @param elementsToIgnore
 	 * @param print
 	 * @param visualize
 	 * @param firstLevel
 	 * @return a list of nodes if valid mapping is found
 	 */
-	public static List<Node> match(Set<Token> relationTokens,Set<Token> attributeTokens, Set<Token> valueTokens, List<Attachment> dependencies, List<Element> elementsToIgnore, boolean print, boolean visualize, boolean firstLevel){
+	public static List<Node> match(Set<Token> relationTokens,Set<Token> attributeTokens, Set<Token> valueTokens, List<Attachment> attachments, List<Element> elementsToIgnore, boolean print, boolean visualize, PRECISE.ErrorMsg err){
 		
-		firstLevel = true;
 		
 		if(attributeTokens.size() > valueTokens.size()){
 			if(print)
@@ -35,7 +34,7 @@ public class Matcher {
 		}
 
 		//build avGraph
-		ListenableDirectedWeightedGraph<Node,DefaultWeightedEdge>  avGraph = attributeValueGraph(relationTokens, attributeTokens, valueTokens, dependencies, elementsToIgnore, print);
+		ListenableDirectedWeightedGraph<Node,DefaultWeightedEdge>  avGraph = attributeValueGraph(relationTokens, attributeTokens, valueTokens, attachments, elementsToIgnore, print);
 
 		//make max flow of av
 		EdmondsKarpMaximumFlow<Node, DefaultWeightedEdge> avFlow = maxFlow(avGraph,print);
@@ -45,7 +44,7 @@ public class Matcher {
 			if(print)
 				System.out.println("No max flow, incomplete graph (" +Tokenizer.getLabel(relationTokens, attributeTokens, valueTokens,elementsToIgnore)+")");
 
-			if(visualize && firstLevel)
+			if(visualize)
 				MatchVisualizer.visualize(Tokenizer.getLabel(relationTokens, attributeTokens, valueTokens,elementsToIgnore)+" flow: 0", avGraph);
 
 			return null;
@@ -67,7 +66,7 @@ public class Matcher {
 			if(print)
 				System.out.println("max flow less than value token amount (" +Tokenizer.getLabel(relationTokens, attributeTokens, valueTokens,elementsToIgnore)+")");
 
-			if(visualize && firstLevel)
+			if(visualize)
 				MatchVisualizer.visualize(Tokenizer.getLabel(relationTokens, attributeTokens, valueTokens,elementsToIgnore)+" flow: "+Math.round(avFlowVal) +"/"+avCapacity, avGraph);
 			return null;
 		}
@@ -87,7 +86,7 @@ public class Matcher {
 		List<Element> activeAttribsAV = getActiveElements(avGraph, avFlow,"EA");
 
 		//make relation graph
-		ListenableDirectedWeightedGraph<Node,DefaultWeightedEdge> rGraph = relationGraph(relationTokens, activeAttribsAV);
+		ListenableDirectedWeightedGraph<Node,DefaultWeightedEdge> rGraph = relationGraph(relationTokens, activeAttribsAV, attachments);
 
 		//compute max flow
 		EdmondsKarpMaximumFlow<Node, DefaultWeightedEdge> rFlow = maxFlow(rGraph, print);
@@ -108,7 +107,7 @@ public class Matcher {
 				for(Element ae : activeAttribsAV){
 					List<Element> attributesToIgnoreRec = new ArrayList<Element>(elementsToIgnore);
 					attributesToIgnoreRec.add(ae);
-					List<Node> newMaxFlow = match(relationTokens, attributeTokens, valueTokens, dependencies, attributesToIgnoreRec, print,visualize,false);
+					List<Node> newMaxFlow = match(relationTokens, attributeTokens, valueTokens, attachments, attributesToIgnoreRec, print,visualize,err);
 					if(newMaxFlow != null)
 						return newMaxFlow;
 				}
@@ -130,9 +129,9 @@ public class Matcher {
 				for(Element ae : unmatchedAttribs){
 					List<Element> attributesToIgnoreRec = new ArrayList<Element>(elementsToIgnore);
 					attributesToIgnoreRec.add(ae);
-					List<Node> newMaxFlow = match(relationTokens, attributeTokens, valueTokens, dependencies, attributesToIgnoreRec, print,visualize,false);
+					List<Node> newMaxFlow = match(relationTokens, attributeTokens, valueTokens, attachments, attributesToIgnoreRec, print,visualize,err);
 					if(newMaxFlow != null){
-						if(visualize && firstLevel){
+						if(visualize){
 							MatchVisualizer.visualize(Tokenizer.getLabel(relationTokens, attributeTokens, valueTokens,elementsToIgnore)+" flow: "+"/"+valueTokens.size(), avGraph);
 
 						}
@@ -148,7 +147,7 @@ public class Matcher {
 				System.out.println("This works: "+Tokenizer.getLabel(relationTokens, attributeTokens, valueTokens,elementsToIgnore));
 			List<Node> avNodes = mapNodes(avGraph, avFlow);
 
-			if(visualize && firstLevel){
+			if(visualize){
 				MatchVisualizer.visualize(Tokenizer.getLabel(relationTokens, attributeTokens, valueTokens,elementsToIgnore )+" flow: "+Math.round(avFlowVal) +"/"+valueTokens.size(), avGraph);
 				MatchVisualizer.visualize(Tokenizer.getLabel(relationTokens, attributeTokens, valueTokens,elementsToIgnore )+" flow: "+Math.round(avFlowVal) +"/"+valueTokens.size(), rGraph);
 			}
@@ -456,16 +455,17 @@ public class Matcher {
 	 * @param relationTokens
 	 * @param activeAttributes
 	 */
-	private static ListenableDirectedWeightedGraph<Node, DefaultWeightedEdge> relationGraph(Set<Token> relationTokens, List<Element> activeElements){
+	private static ListenableDirectedWeightedGraph<Node, DefaultWeightedEdge> relationGraph(Set<Token> relationTokens, List<Element> activeElements, List<Attachment> attachments){
+		
 		ListenableDirectedWeightedGraph<Node, DefaultWeightedEdge> rGraph = new ListenableDirectedWeightedGraph<Node, DefaultWeightedEdge>(DefaultWeightedEdge.class);
 
 		Node S = new Node("S");//source
 		S.setColumn("S");
 
 		rGraph.addVertex(S);
+		
+		
 		//relation tokens
-
-
 		List<Node> rt = new ArrayList<Node>();
 		for(Token t : relationTokens){
 			Node tr = new Node(t);
@@ -476,27 +476,30 @@ public class Matcher {
 		}
 
 		//active element relations
-
 		List<Node> aar = new ArrayList<Node>();
 		for(Element e : activeElements){
 			for(Element comp : e.getCompatible()){
 				if(comp.getType() == Element.TYPE_RELATION){
-					Node er = getNodeContainingElement(aar, comp);
-					if(er == null){
-						er = new Node(comp);
-						er.setColumn("ER");
-						aar.add(er);
-						rGraph.addVertex(er);
-						//possibly add edges
-						for(Node nt : rt){
-							List<Element> elems = Lexicon.getElements(nt.getToken());
-							if(elems.contains(comp)){
-								//add edge
-								rGraph.addEdge(nt, er);
+					
+					if(respectsAttachmentV2(attachments, e, comp, Lexicon.isWH(e))){
+						Node er = getNodeContainingElement(aar, comp);
+						if(er == null){
+							er = new Node(comp);
+							er.setColumn("ER");
+							aar.add(er);
+							rGraph.addVertex(er);
+							//possibly add edges
+							for(Node nt : rt){
+								List<Element> elems = Lexicon.getElements(nt.getToken());
+								if(elems.contains(comp)){
+									//add edge
+									rGraph.addEdge(nt, er);
+								}
 							}
+	
 						}
-
 					}
+					
 				}
 			}
 		}

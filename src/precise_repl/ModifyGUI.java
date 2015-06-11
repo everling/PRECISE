@@ -151,6 +151,9 @@ public class ModifyGUI implements Runnable, ActionListener, ListSelectionListene
 			System.out.println("No lexicon found.");
 			return;
 		}
+		Lexicon.reloadSyntactic();
+		Lexicon.printMappingsBetter();
+		
         ModifyGUI se = new ModifyGUI();
         SwingUtilities.invokeLater(se);
     }

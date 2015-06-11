@@ -111,7 +111,7 @@ public class TestGUI implements Runnable, ActionListener {
 	public void actionPerformed(ActionEvent e) {
 
 		if(e.getSource().equals(queryLauncher)){
-			result.setText(PRECISE.query(query.getText(),dependencies.getText(), visualize.isSelected(), equivalence.isSelected(), killAttachment.isSelected(), printDebug.isSelected()));
+			result.setText(PRECISE.query(query.getText(),dependencies.getText(), visualize.isSelected(), equivalence.isSelected(), killAttachment.isSelected(), printDebug.isSelected(),new PRECISE.ErrorMsg()));
 		}
 		else if(e.getSource().equals(testAttachment)){
 			PRECISE.queryAttachment(query.getText(),dependencies.getText(),killAttachment.isSelected());

@@ -31,7 +31,7 @@ public class PRECISE{
 	 * @param print
 	 * @return SQL queries
 	 */
-	public static String query(String q, String manualDependencies, boolean visualize, boolean equivalence,boolean onlyManual,boolean print){
+	public static String query(String q, String manualDependencies, boolean visualize, boolean equivalence,boolean onlyManual,boolean print, ErrorMsg err){
 		
 		List<String> finishedQueries = new ArrayList<String>();
 		CoreMap question = Parser.getCoreMap(q);
@@ -47,7 +47,7 @@ public class PRECISE{
 
 
 		
-		List<Set<Token>> s = Tokenizer.getCompleteTokenizations(question,print);
+		List<Set<Token>> s = Tokenizer.getCompleteTokenizations(question,print,err);
 		
 		if(s == null)
 			return "";
@@ -72,7 +72,7 @@ public class PRECISE{
 						System.out.println("\n"+title);
 					}
 			
-					List<Node> avNodes = Matcher.match(tsr.aTokens, tsa.aTokens, tsa.bTokens, dependencies, null, print,visualize,true);
+					List<Node> avNodes = Matcher.match(tsr.aTokens, tsa.aTokens, tsa.bTokens, dependencies, null, print,visualize,err);
 					if(avNodes != null){
 						
 						List<String> queries = QueryGenerator.generateQuery(avNodes, dependencies,print);

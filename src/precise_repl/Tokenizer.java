@@ -44,7 +44,7 @@ public class Tokenizer {
 	 * 					 only distinct tokens
 	 * @return
 	 */
-	public static List<Set<Token>> getCompleteTokenizations(CoreMap question, boolean print){
+	public static List<Set<Token>> getCompleteTokenizations(CoreMap question, boolean print, PRECISE.ErrorMsg err){
 		
 		List<CoreLabel> parsedWords = Parser.getWords(question);
 		List<Token> tokens = new ArrayList<Token>();
@@ -57,8 +57,10 @@ public class Tokenizer {
 			if(!Lexicon.isSyntacticMarker(stem)){
 				List<Token> tokens2 = Lexicon.getTokens(stem);
 				if(tokens2 == null){ //incomplete tokenization
+					
+					err.msg = "no token for :" +stem;
 					if(print)
-						System.out.println("no token for :" +stem);
+						System.out.println(err.msg);
 					return null;
 				}
 				for(Token t : tokens2)
@@ -111,8 +113,11 @@ public class Tokenizer {
 			}
 		}
 		
-		if(toRet.size() == 0 && print)
-			System.out.println("no complete tokenization");
+		if(toRet.size() == 0){
+			err.msg = "no complete tokenization";
+			if(print)
+			  System.out.println(err.msg);
+		}
 		
 		return toRet;
 	}

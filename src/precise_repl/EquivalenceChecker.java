@@ -44,6 +44,8 @@ public class EquivalenceChecker {
 	 */
 	public static void equivalenceCheck(List<Node> avNodes, Set<Token> relationTokens, Set<Token> attributeTokens, Set<Token> valueTokens, List<Element> ignoredElements, List<Attachment> dependencies, List<String> finishedQueries, boolean print){
 		
+		PRECISE.ErrorMsg msg = new PRECISE.ErrorMsg();
+		
 		if(print)
 			System.out.println("Examining equivalent flows..");
 
@@ -59,7 +61,7 @@ public class EquivalenceChecker {
 		for(Node n : activeAttributeNodes){
 			List<Element> ignoreElements = new ArrayList<Element>(ignoredElements);
 			ignoreElements.add(n.getElement());
-			List<Node> avNodesEQ = Matcher.match(relationTokens, attributeTokens, valueTokens, dependencies, ignoreElements, print,false,false);
+			List<Node> avNodesEQ = Matcher.match(relationTokens, attributeTokens, valueTokens, dependencies, ignoreElements, print,false,msg);
 			if(avNodesEQ != null){
 				if(print)
 					System.out.println("Equivalent max flow found:");

@@ -1,5 +1,6 @@
 package precise_repl;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -12,9 +13,27 @@ public class Token implements java.io.Serializable{
 	private List<String> words;
 	private int[] types = new int[4];
 	
+	private transient List<Integer> indexInSentence;
 	
 	public List<String> getWords(){
 		return words;
+	}
+	
+	public void addIndex(int i){
+		if(indexInSentence == null)
+			indexInSentence = new ArrayList<Integer>();
+		if(!indexInSentence.contains(i))
+			indexInSentence.add(i);
+	}
+	
+	public List<Integer> getIndex(){
+		if(indexInSentence == null)
+			indexInSentence = new ArrayList<Integer>();
+		return indexInSentence;
+	}
+	
+	public void clearIndex(){
+		indexInSentence = new ArrayList<Integer>();
 	}
 	
 	public Token(int type, String... s){
@@ -87,6 +106,7 @@ public class Token implements java.io.Serializable{
 	
 	@Override
 	public String toString(){
+		
 		
 		return getTypeMarker() + Arrays.toString(words.toArray());
 	}

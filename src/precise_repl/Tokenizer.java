@@ -49,11 +49,13 @@ public class Tokenizer {
 		List<CoreLabel> parsedWords = Parser.getWords(question);
 		List<Token> tokens = new ArrayList<Token>();
 		List<String> wordList = new ArrayList<String>();
+		List<Integer> wordIndexes = new ArrayList<Integer>();
 		
 		//get potential tokens for each word stem
 		for(CoreLabel word : parsedWords){
 			String stem = Lexicon.getWordStem(word.value().toLowerCase(), Parser.getWordnetPOS(word));
 			wordList.add(stem);
+			wordIndexes.add(word.index());
 			if(!Lexicon.isSyntacticMarker(stem)){
 				List<Token> tokens2 = Lexicon.getTokens(stem);
 				if(tokens2 == null){ //incomplete tokenization
@@ -63,8 +65,11 @@ public class Tokenizer {
 						System.out.println(err.msg);
 					return null;
 				}
-				for(Token t : tokens2)
+				for(Token t : tokens2){
+					t.addIndex(word.index());
 					tokens.add(t);
+				}
+					
 			}
 		}
 		
@@ -89,6 +94,39 @@ public class Tokenizer {
 			
 		for(Token t : toRemove)
 			tokens.remove(t);
+		
+		toRemove.clear();
+		
+		//merge duplicate tokens with adjacent indexes
+		for(int i = 0; i < tokens.size(); i++){
+			for(int j = 0; j < tokens.size(); j++){
+				if( i == j)
+					continue;
+				Token ti = tokens.get(i);
+				Token tj = tokens.get(j);
+				
+				if(ti.equals(tj)){
+					for(int m : ti.getIndex()){
+						for(int n : tj.getIndex()){
+							if(m - n == 1 || n - m == 1){
+								//merge
+								for(int v : tj.getIndex()){
+									ti.addIndex(v);
+								}
+								tj.clearIndex();
+								toRemove.add(tj);
+							}
+						}
+					}
+				}
+			}			
+		}
+		
+		
+		for(Token t : toRemove)
+			tokens.remove(t);
+		
+		
 		
 		if(print)
 			System.out.println("\n***** Tokenizer tokens:" +Arrays.toString(tokens.toArray()));

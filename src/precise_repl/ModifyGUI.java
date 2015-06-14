@@ -6,7 +6,6 @@ import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 
 import javax.swing.DefaultListModel;
@@ -19,13 +18,10 @@ import javax.swing.ListSelectionModel;
 import javax.swing.SwingUtilities;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
-
-import precise_repl.Lexicon.JoinPath;
  
 
 /**
  * Simple java GUI to add and remove token mappings to elements in the lexicon
- * @author nils
  *
  */
 public class ModifyGUI implements Runnable, ActionListener, ListSelectionListener {
@@ -61,7 +57,6 @@ public class ModifyGUI implements Runnable, ActionListener, ListSelectionListene
         List<Element> allElems = Lexicon.getAllElements();
         relAndAtt = new ArrayList<Element>();
         for(Element e : allElems){
-        	//if(e.getType() == Element.TYPE_VALUE && e.getCompatible().get(0).getName().equals("studio"))
         	if(e.getType() == Element.TYPE_RELATION || e.getType() == Element.TYPE_ATTRIBUTE)
         		relAndAtt.add(e);
         }
@@ -151,7 +146,7 @@ public class ModifyGUI implements Runnable, ActionListener, ListSelectionListene
 			System.out.println("No lexicon found.");
 			return;
 		}
-		Lexicon.reloadSyntactic();
+		Lexicon.reloadSyntacticMarkers();
 		Lexicon.printMappingsBetter(false);
 		
         ModifyGUI se = new ModifyGUI();

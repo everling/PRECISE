@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
 
@@ -13,7 +12,6 @@ import edu.stanford.nlp.ling.CoreAnnotations.PartOfSpeechAnnotation;
 import edu.stanford.nlp.ling.CoreAnnotations.SentencesAnnotation;
 import edu.stanford.nlp.ling.CoreAnnotations.TokensAnnotation;
 import edu.stanford.nlp.ling.CoreLabel;
-import edu.stanford.nlp.ling.IndexedWord;
 import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.pipeline.StanfordCoreNLP;
 import edu.stanford.nlp.semgraph.SemanticGraph;
@@ -80,7 +78,6 @@ public class Parser {
 	 */
 	public static List<Attachment> getDependencies(CoreMap sentence, String manualAdditions, boolean print, boolean onlyManual){
 		SemanticGraph dependencies = sentence.get(CollapsedCCProcessedDependenciesAnnotation.class);
-
 		Set<SemanticGraphEdge> edgeSet = dependencies.getEdgeSet();
 		
 		HashMap<Integer,List<Token>> idMapping = new HashMap<Integer,List<Token>>();
@@ -92,15 +89,7 @@ public class Parser {
 		
 		for(SemanticGraphEdge sge : edgeSet){
 			if(print)
-				System.out.println(""+sge +" " +sge.getGovernor() +" " +sge.getDependent());
-			String relation = sge.getRelation().toString();
-			/*if(relation.equals("nn")){
-				List<Token> tokens = Tokenizer.tokenizeString(sge.getDependent().originalText().toLowerCase() +" " +sge.getGovernor().originalText().toLowerCase());
-				int govID  = sge.getGovernor().index();
-				int depID = sge.getDependent().index();
-				idMapping.put(govID, tokens);
-				idMapping.put(depID, tokens);
-			}	*/	
+				System.out.println(""+sge +" " +sge.getGovernor() +" " +sge.getDependent());	
 		}
 		
 		HashMap<Integer,List<Token>> semanticMarkerFuse = new HashMap<Integer,List<Token>>();
@@ -108,6 +97,7 @@ public class Parser {
 		
 		//the rest, attachment mappings
 		for(SemanticGraphEdge sge : edgeSet){
+			
 			if(true){
 				//look for existing tokens first
 				List<Token> govTokens = idMapping.get(sge.getGovernor().index());
@@ -154,6 +144,7 @@ public class Parser {
 				
 			}
 		}
+		
 		
 		try{
 			
@@ -219,6 +210,8 @@ public class Parser {
 		
 	}
 
+
+	
 	/**
 	 * 
 	 * Attachment mappings represented by two sets of tokens.
@@ -229,8 +222,7 @@ public class Parser {
 		private List<Token> tokenA;
 		private List<Token> tokenB;
 		private boolean isWH;
-		
-		
+	
 		public Attachment(List<Token> a, List<Token> b, String type){
 			tokenA = a;
 			tokenB = b;
@@ -251,15 +243,7 @@ public class Parser {
 			}
 			
 		}
-	
-		public boolean containsTokenInSetA(Token a){
-			return tokenA.contains(a);
-		}
-		
-		public boolean containsTokenInSetB(Token b){
-			return tokenB.contains(b);
-		}
-		
+
 		/**
 		 * Check if element a can be matched from one of the tokens in tokenA/B.
 		 * @param a
@@ -285,124 +269,7 @@ public class Parser {
 			}
 			
 			return false;
-			//return Lexicon.canDeriveElementFromToken(tokens, a);
 		}
-		
-
-
-		/**
-		 * Checks whether a given element A is a value/attribute of a relation derived from tokenA/B
-		 * @param a
-		 * @param B if false: search set tokenA. true: search set tokenB.
-		 * @return
-		 */
-		public boolean isAttachmentRelation(Element a ,boolean B){
-			List<Token> tokenA = this.tokenA;
-			
-			if(B){
-				tokenA = this.tokenB;
-			}
-			
-			if(a.getCompatible() == null || a.getCompatible().size() == 0)
-				return false;
-			
-			for(Token aToken : tokenA){
-				List<Element> aElems = Lexicon.getElements(aToken);
-				if(aElems == null)
-					 continue;
-				for(Element ae : aElems){
-					if(ae.getType() == Element.TYPE_RELATION && a.getCompatible().contains(ae))
-						return true;
-					
-				}
-			}		
-		return false;
-		}
-		
-		
-		/**
-		 * Checks whether given attributeElement is the primary key of a relation derived from tokenA/B
-		 * @param attributeElement 
-		 * @param B if false: search set tokenA. true: search set tokenB.
-		 * @return
-		 */
-		public boolean isAttachmentPrimaryKey(Element attributeElement, boolean B){
-			List<Token> tokenA = this.tokenA;
-			
-			if(B){
-				tokenA = this.tokenB;
-			}
-			
-			for(Token t : tokenA){
-				
-				if(Tokenizer.isWH(t))
-					continue;
-				
-				List<Element> elems = Lexicon.getElements(t);
-				if(elems == null)
-					continue;
-				
-				for(Element e : elems){
-					if(e.getType() == Element.TYPE_RELATION){
-						
-						String primaryKey = e.getPrimaryKey();
-						List<Element> schema = e.getSchema();
-						
-						
-						
-						if(primaryKey != null && schema != null && primaryKey.equals(attributeElement.getName()) && schema.contains(attributeElement))
-							return true;
-					}
-				}
-			}
-			return false;
-		}
-		
-		/**
-		 * check whether a given element A is a value/attribute/relation of the same relation of the elements derived from tokenA/B.
-		 * @param a
-		 * @param B if false: search set tokenA. true: search set tokenB.
-		 * @return
-		 */
-		public boolean isAttachmentSameRelation(Element a ,boolean B){
-			
-			List<Token> tokenA = this.tokenA;
-			
-			if(B){
-				tokenA = this.tokenB;
-			}
-			
-				Element aRelation = null;
-				for(Element r : a.getCompatible()){
-					if(r.getType() == Element.TYPE_RELATION){
-						aRelation = r;
-						break;
-					}
-				}
-	
-				if(aRelation == null && a.getType() != Element.TYPE_RELATION)
-					return false;
-				else if(aRelation == null)
-					aRelation = a;
-				
-				for(Token aToken : tokenA){
-					List<Element> aElems = Lexicon.getElements(aToken);
-					if(aElems == null)
-						 continue;
-					for(Element ae : aElems){
-						List<Element> comp = ae.getCompatible();
-						for(Element c : comp){
-							if(c.getType() == Element.TYPE_RELATION && c.equals(aRelation))
-								return true;
-						}
-						if(ae.getType() == Element.TYPE_RELATION && ae.equals(aRelation))
-							return true;
-					}
-				}		
-
-			return false;
-		}
-		
 		
 		/**
 		 * @param type
@@ -432,7 +299,7 @@ public class Parser {
 
 		/**
 		 * @param B if false: search set tokenA. true: search set tokenB.
-		 * @return true if a token in tokenA/B refers to a primary key value of a relation.
+		 * @return a list of relations compatible with the primary key
 		 */
 		public List<Element> tokenRefersToValueOfPrimaryKey(boolean B){
 			

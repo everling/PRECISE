@@ -3,6 +3,7 @@ package precise_repl;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 import precise_repl.Lexicon.JoinPath;
 import precise_repl.Parser.Attachment;
@@ -11,11 +12,25 @@ public class QueryGenerator {
 
 
 
-	public static List<String> generateQuery(List<Node> avNodes, List<Attachment> dependencies,boolean print){
+	public static List<String> generateQuery(List<Node> avNodes, Set<Token> relationTokens,List<Attachment> attachments,boolean print){
 
-		// get all compatile relations from attributes
+		
+		
+		
+		
 		List<Element> relations = new ArrayList<Element>();
-
+		//get all relations from relation tokens in tokenization
+		for(Token tr : relationTokens){
+			List<Element> rs = Lexicon.getElements(tr);
+			if(rs != null){
+				for(Element r : rs){
+					if(r.getType() == Element.TYPE_RELATION && !relations.contains(r))
+						relations.add(r);
+				}
+			}
+		}
+		
+		// get all compatible relations from attributes		
 		for(Node ea : avNodes){
 			if(ea.getElement() != null && ea.getColumn().equals("EA")){
 				for(Element r : ea.getElement().getCompatible()){
@@ -52,7 +67,7 @@ public class QueryGenerator {
 			for(List<JoinPath> jp : joinPaths){
 				if(print)
 					System.out.println(Arrays.toString(jp.toArray()));
-				String s = generateQuery1(avNodes,dependencies,jp,whPaired,print);
+				String s = generateQuery1(avNodes,relations,attachments,jp,whPaired,print);
 				if(!s.contains("*IJ"))
 					toRet.add(0, s);
 				else
@@ -62,7 +77,7 @@ public class QueryGenerator {
 
 		}
 		else{
-			String s = generateQuery1(avNodes,dependencies,null,whPaired,print);
+			String s = generateQuery1(avNodes,relations,attachments,null,whPaired,print);
 			if(!s.contains("*"))
 				toRet.add(0, s);
 			else
@@ -73,10 +88,10 @@ public class QueryGenerator {
 	}
 
 
-	private static String generateQuery1(List<Node> avNodes, List<Attachment> dependencies,List<JoinPath> joinPath, Element whPaired, boolean print){
+	private static String generateQuery1(List<Node> avNodes, List<Element> relations,List<Attachment> attachments,List<JoinPath> joinPath, Element whPaired, boolean print){
 
 		// get all compatile relations from attributes
-		List<Element> relations = new ArrayList<Element>();
+		/*List<Element> relations = new ArrayList<Element>();
 
 		for(Node ea : avNodes){
 			if(ea.getElement() != null && ea.getColumn().equals("EA")){
@@ -86,7 +101,7 @@ public class QueryGenerator {
 				}
 			}
 		}
-
+		*/
 
 
 
@@ -124,7 +139,7 @@ public class QueryGenerator {
 		}
 
 
-		if(hasValueConstraints){
+		if(hasValueConstraints || relations.size() > 1){
 			query.append(" WHERE ");
 			//specify Relation.attribute = value
 			for(Node ea : avNodes){
@@ -153,7 +168,7 @@ public class QueryGenerator {
 
 
 		}
-		if(hasValueConstraints)
+		if(hasValueConstraints || relations.size() > 1)
 			query.delete(query.length()-5, query.length()-1);//remove last AND
 		query.append(";");
 		return query.toString();

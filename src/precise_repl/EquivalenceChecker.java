@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Set;
 
 import precise_repl.Parser.Attachment;
-import precise_repl.Tokenizer.TokenSetPair;
 
 public class EquivalenceChecker {
 	
@@ -38,16 +37,15 @@ public class EquivalenceChecker {
 	 * @param tsr
 	 * @param tsa
 	 * @param ignoredElements
-	 * @param dependencies
+	 * @param attachments
 	 * @param finishedQueries
 	 * @param print
 	 */
-	public static void equivalenceCheck(List<Node> avNodes, Set<Token> relationTokens, Set<Token> attributeTokens, Set<Token> valueTokens, List<Element> ignoredElements, List<Attachment> dependencies, List<String> finishedQueries, boolean print){
+	public static void equivalenceCheck(List<Node> avNodes, Set<Token> relationTokens, Set<Token> attributeTokens, Set<Token> valueTokens, List<Element> ignoredElements, List<Attachment> attachments, List<String> finishedQueries, boolean print, boolean visualize){
 		
 		PRECISE.ErrorMsg msg = new PRECISE.ErrorMsg();
 		
-		if(print)
-			System.out.println("Examining equivalent flows..");
+
 
 		if(addMemoization(ignoredElements))
 			return;
@@ -61,18 +59,18 @@ public class EquivalenceChecker {
 		for(Node n : activeAttributeNodes){
 			List<Element> ignoreElements = new ArrayList<Element>(ignoredElements);
 			ignoreElements.add(n.getElement());
-			List<Node> avNodesEQ = Matcher.match(relationTokens, attributeTokens, valueTokens, dependencies, ignoreElements, print,false,msg);
+			List<Node> avNodesEQ = Matcher.match(relationTokens, attributeTokens, valueTokens, attachments, ignoreElements, print,false,msg);
 			if(avNodesEQ != null){
 				if(print)
 					System.out.println("Equivalent max flow found:");
 				
-				List<String> eqQueries =QueryGenerator.generateQuery(avNodesEQ, dependencies,print);
+				List<String> eqQueries =QueryGenerator.generateQuery(avNodesEQ, relationTokens,attachments,print);
 				
 				for(String qq : eqQueries)
 					if(!finishedQueries.contains(qq))
 						finishedQueries.add(qq);
 				
-				equivalenceCheck(avNodesEQ, relationTokens, attributeTokens, valueTokens, ignoreElements, dependencies, finishedQueries,print);
+				equivalenceCheck(avNodesEQ, relationTokens, attributeTokens, valueTokens, ignoreElements, attachments, finishedQueries,print,visualize);
 			}
 		}
 	}

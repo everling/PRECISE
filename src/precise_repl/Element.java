@@ -92,6 +92,8 @@ public class Element implements java.io.Serializable{
 	}
 	
 	public String getPrimaryKey(){
+		if(primaryKey == null)
+			return "";
 		return primaryKey;
 	}
 	

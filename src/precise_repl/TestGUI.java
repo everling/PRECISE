@@ -16,8 +16,7 @@ import javax.swing.SwingUtilities;
 
 /**
  * The GUI class for testing PRECISE. Contains main method.
- * @author nils
- *
+ * 
  */
 public class TestGUI implements Runnable, ActionListener {
  
@@ -25,7 +24,7 @@ public class TestGUI implements Runnable, ActionListener {
 	JButton testAttachment;
 	JTextField query;
 	JTextArea result;
-	JTextArea dependencies;
+	JTextArea attachments;
 	JTextArea excel;
 	JCheckBox visualize;
 	JCheckBox equivalence;
@@ -55,7 +54,7 @@ public class TestGUI implements Runnable, ActionListener {
         visualize = new JCheckBox("Visualize");
         equivalence = new JCheckBox("EQ check");
         printDebug = new JCheckBox("Debug");
-        dependencies = new JTextArea(1,20);
+        attachments = new JTextArea(1,20);
         killAttachment = new JCheckBox("Delete attachment");
         result = new JTextArea(20, 50);
         result.setLineWrap(true);
@@ -71,7 +70,7 @@ public class TestGUI implements Runnable, ActionListener {
         f.add(visualize);
         f.add(equivalence);
         f.add(printDebug);
-        f.add(dependencies);
+        f.add(attachments);
         f.add(killAttachment);
         f.add(result);
         f.add(helpBtn);
@@ -101,7 +100,7 @@ public class TestGUI implements Runnable, ActionListener {
 			System.out.println("No lexicon found.");
 			return;
 		}		
-		
+		Lexicon.reloadSyntacticMarkers();
     	Lexicon.printMappingsBetter(false);
         TestGUI se = new TestGUI();
         SwingUtilities.invokeLater(se);
@@ -111,10 +110,10 @@ public class TestGUI implements Runnable, ActionListener {
 	public void actionPerformed(ActionEvent e) {
 
 		if(e.getSource().equals(queryLauncher)){
-			result.setText(PRECISE.query(query.getText(),dependencies.getText(), visualize.isSelected(), equivalence.isSelected(), killAttachment.isSelected(), printDebug.isSelected(),new PRECISE.ErrorMsg()));
+			result.setText(PRECISE.query(query.getText(),attachments.getText(), visualize.isSelected(), equivalence.isSelected(), killAttachment.isSelected(), printDebug.isSelected(),new PRECISE.ErrorMsg()));
 		}
 		else if(e.getSource().equals(testAttachment)){
-			PRECISE.queryAttachment(query.getText(),dependencies.getText(),killAttachment.isSelected());
+			PRECISE.queryAttachment(query.getText(),attachments.getText(),killAttachment.isSelected());
 		}
 		else if(e.getSource().equals(helpBtn)){
 	        JOptionPane.showMessageDialog(f,help);

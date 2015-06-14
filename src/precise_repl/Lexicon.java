@@ -39,7 +39,7 @@ public class Lexicon implements java.io.Serializable{
 	private static List<JoinPath> jps = new ArrayList<JoinPath>();
 	private static ArrayList<Element> elements;
 	
-	private static String[] syntactic_markers = new String[]{"are","the","on","a","in","is","be","of","do","with","by","ha","has","have","some","many","`"};
+	private static String[] syntactic_markers = new String[]{"are","the","on","a","in","is","be","of","do","with","by","ha","has","have","some","that","there","and","all"};
 	private static Element[] wh = new Element[]{new Element(Element.TYPE_VALUE,"what"), new Element(Element.TYPE_VALUE,"where"), new Element(Element.TYPE_VALUE,"when"), new Element(Element.TYPE_VALUE,"who"),new Element(Element.TYPE_VALUE,"which"),new Element(Element.TYPE_VALUE,"how")};
 
 	private static HashMap<Token,List<Element>> tokenToElements;
@@ -61,9 +61,14 @@ public class Lexicon implements java.io.Serializable{
 		return wh;
 	}
 	
-	public static void reloadSyntactic(){
-		syntactic_markers = new String[]{"are","the","on","a","in","is","be","of","do","with","by","ha","has","have","some","many","`"};
+	public static void reloadSyntacticMarkers(){
+		syntactic_markers = new String[]{"are","the","on","a","in","is","be","of","do","with","by","ha","has","have","some","that","there","and","all"};
 	}
+	
+	public static void reloadWH(){		
+		wh = new Element[]{new Element(Element.TYPE_VALUE,"what"), new Element(Element.TYPE_VALUE,"where"), new Element(Element.TYPE_VALUE,"when"), new Element(Element.TYPE_VALUE,"who"),new Element(Element.TYPE_VALUE,"which"),new Element(Element.TYPE_VALUE,"how")};
+	}
+	
 	
 	
 	/**
@@ -228,7 +233,7 @@ public class Lexicon implements java.io.Serializable{
 	public static void manuallyPairAttributesWithWH(){
 		
 		for(Element e : elements){
-			if(e.getType() == Element.TYPE_ATTRIBUTE){
+			if(e.getType() == Element.TYPE_ATTRIBUTE || e.getType() == Element.TYPE_RELATION){
 				String name = e.getName();
 				System.out.println(name);
 					
@@ -245,8 +250,7 @@ public class Lexicon implements java.io.Serializable{
 	
 	public static void clearWHMappings(){
 		
-		wh = new Element[]{new Element(Element.TYPE_VALUE,"what"), new Element(Element.TYPE_VALUE,"where"), new Element(Element.TYPE_VALUE,"when"), new Element(Element.TYPE_VALUE,"who"),new Element(Element.TYPE_VALUE,"which"),new Element(Element.TYPE_VALUE,"how")};
-
+		
 		for(Element w : wh){
 			w.getCompatible().clear();
 		}
@@ -587,6 +591,19 @@ public class Lexicon implements java.io.Serializable{
 		}
 		
 		
+	}
+	
+	public static boolean canDeriveElementOfTypeFromToken(List<Token> tokens, int type){
+		for(Token t : tokens){
+			List<Element> elems = Lexicon.getElements(t);
+			if(elems != null){
+				for(Element e : elems){
+					if(e.getType() == type)
+						return true;
+				}
+			}
+		}
+		return false;
 	}
 	
 	public static boolean canDeriveElementFromToken(List<Token> tokens, Element a){

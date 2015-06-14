@@ -92,8 +92,8 @@ public class Matcher {
 		EdmondsKarpMaximumFlow<Node, DefaultWeightedEdge> rFlow = maxFlow(rGraph, print);
 
 		
-		
-		if(rFlow == null || rFlow.getMaximumFlowValue() < relationTokens.size()){
+		boolean rFlowRuleIgnored = true;
+		if(!rFlowRuleIgnored && (rFlow == null || rFlow.getMaximumFlowValue() < relationTokens.size())){
 			
 			if(print)
 				System.out.println("Bad relation - attribute correspondence for :"+Tokenizer.getLabel(relationTokens, attributeTokens, valueTokens,elementsToIgnore));
@@ -180,7 +180,7 @@ public class Matcher {
 	 * @param valueTokens
 	 * @return
 	 */
-	private static ListenableDirectedWeightedGraph<Node,DefaultWeightedEdge> attributeValueGraph(Set<Token> relationTokens,Set<Token> attributeTokens, Set<Token> valueTokens, List<Attachment> dependencies, List<Element> attributesToIgnore, boolean print){
+	private static ListenableDirectedWeightedGraph<Node,DefaultWeightedEdge> attributeValueGraph(Set<Token> relationTokens,Set<Token> attributeTokens, Set<Token> valueTokens, List<Attachment> attachments, List<Element> attributesToIgnore, boolean print){
 
 		ListenableDirectedWeightedGraph<Node, DefaultWeightedEdge> avGraph = new ListenableDirectedWeightedGraph<Node, DefaultWeightedEdge>(DefaultWeightedEdge.class);
 
@@ -250,73 +250,95 @@ public class Matcher {
 
 		//third column, attribute elements 1
 		//duplicate elements may occur, so we need to do containment checks
+		//this is where attachments are enforced
 		List<Node> ea1 = new ArrayList<Node>();
 		for(Node ev : evColumn){
 
-			int success = 0;
 
+			List<Element> candidateAttributes = new ArrayList<Element>();
 			for(Element comp : ev.getElement().getCompatible()){
+				
+				
 				if(comp.getType() == Element.TYPE_ATTRIBUTE){
 
-					if(attributesToIgnore != null && attributesToIgnore.contains(comp))
-						continue;
-
 					boolean implicitAttribute = !Lexicon.canDeriveElementFromToken(attributeTokens, comp);
-
-
+					
+					
 					if(Lexicon.isWH(ev.getElement())){
-						Token wh = new Token(Element.TYPE_VALUE,ev.getElement().getName());
 						
 						
-						if(implicitAttribute)
-							continue;						
+												
+							//check if attachment to relation exists
+							Element rel = comp.getCompatibleOfType(Element.TYPE_RELATION);
 						
-						if(!respectsAttachmentV2(dependencies, ev.getElement(), comp,true))
-							continue;
+							if(rel != null){
+								if(respectsAttachmentV2(attachments, ev.getElement(), rel)){
+									if(rel.getPrimaryKey().equals(comp.getName()))
+										candidateAttributes.add(comp);
+								}
+							}
+						//explicit attribute to WH
+						if(!implicitAttribute && respectsAttachmentV2(attachments, ev.getElement(), comp)){
+							if(!candidateAttributes.contains(comp))
+								candidateAttributes.add(comp);
+
+						}
+							
 					}
 					else{
 						
 						if(implicitAttribute){
-							
+							//check if value is attached to relation
 							Element rel = comp.getCompatibleOfType(Element.TYPE_RELATION);
-							
 							if(rel != null){
-								if(!respectsAttachmentV2(dependencies,rel,ev.getElement(),false)){
-									
-									//PRIMARY KEY TEST
+								if(!respectsAttachmentV2(attachments,ev.getElement(),rel)){
+									//if value is key value, only allow primary key attribute
 									String pKey = rel.getPrimaryKey();
-									if(!(comp.getName().equals(pKey)))
-										continue;
-
+									Element compRel = comp.getCompatibleOfType(Element.TYPE_RELATION);
+									if((comp.getName().equals(pKey) && compRel != null && compRel.equals(rel))){
+										candidateAttributes.add(comp);
+									}
+										
 								}
-							}
-							else{								
-								continue;
-
 							}
 							
 						}else{
 							//explicit attribute
-							if(!respectsAttachmentV2(dependencies,comp,ev.getElement(),false))
-								continue;
+							if(respectsAttachmentV2(attachments,ev.getElement(),comp))
+								candidateAttributes.add(comp);
+
 						}
 					}
-					
-					Node ea = getNodeContainingElement(ea1, comp);
-
-					if(ea == null){
-						ea = new Node(comp);
-						ea.setColumn("EA");
-						ea1.add(ea);
-					}
-					avGraph.addVertex(ea);
-					avGraph.addEdge(ev, ea);
-					success++;
-
+									
 				}
 			}
-			if(success == 0 && print){
+			if(candidateAttributes.size() == 0 && print){
 				System.out.println("No attribute element match constraints for " +ev);
+			}
+			else{
+				int success = 0;
+				for(Element comp : candidateAttributes){
+					if(attributesToIgnore != null && attributesToIgnore.contains(comp))
+						continue;
+					
+					if(respectsAttachmentPrimaryKey(attachments,ev.getElement(), comp, Lexicon.isWH(ev.getElement()), candidateAttributes.size())){
+						Node ea = getNodeContainingElement(ea1, comp);
+						
+						if(ea == null){
+							ea = new Node(comp);
+							ea.setColumn("EA");
+							ea1.add(ea);
+						}
+						avGraph.addVertex(ea);
+						avGraph.addEdge(ev, ea);
+						success++;
+					}
+					
+				}
+				if(success == 0 && print){
+					System.out.println("No attribute element match constraints for " +ev);
+				}
+				
 			}
 		}
 
@@ -513,19 +535,61 @@ public class Matcher {
 
 	}
 
-	
-	
-	private static boolean respectsAttachmentV2(List<Attachment> dependencies, Element a, Element b, boolean WH){
+	/**
+	 * If a value maps to multiple attributes of the same name, and there exists an attachment for that attribute name to a key value,
+	 * only allow the attribute of the key value.
+	 * @param attachments
+	 * @param value
+	 * @param attribute
+	 * @param WH
+	 * @param noOfCandidates
+	 * @return
+	 */
+	private static boolean respectsAttachmentPrimaryKey(List<Attachment> attachments, Element value, Element attribute, boolean WH, int noOfCandidates){
 		
-		boolean hasConstraint = false;
-		
-		if(dependencies.size() == 0)
+		boolean hasPassed = true;
+		if(noOfCandidates == 1)
 			return true;
 		
-		for(Attachment at : dependencies){
+		
+		for(Attachment at : attachments){
 			
-			if(at.isWH() && !WH)
+			if(at.isWH())
 				continue;
+		
+			boolean left = false;
+			List<Element> rel = at.tokenRefersToValueOfPrimaryKey(left);
+			if(rel == null || rel.size() == 0){
+				left = true;
+				rel = at.tokenRefersToValueOfPrimaryKey(left);
+			}
+				if(rel != null && rel.size() > 0){
+					
+					if(!at.canDeriveElementFromTokens(attribute, !left))
+						continue;
+					
+					hasPassed = false;
+					for(Element r : rel){
+						Element compRel = attribute.getCompatibleOfType(Element.TYPE_RELATION);
+						if(r != null && compRel != null && r.toShortString().equals(compRel.toShortString())){
+							if(compRel != null && compRel.equals(r)){
+								return true;
+							
+							}
+						}
+					}
+			}
+		}
+		return hasPassed;
+	}
+	
+	private static boolean respectsAttachmentV2(List<Attachment> attachments, Element a, Element b){
+		
+		boolean hasConstraint = false;
+		if(attachments.size() == 0)
+			return true;
+		
+		for(Attachment at : attachments){
 			
 			
 			if(at.canDeriveElementFromTokens(a, false)){
@@ -548,13 +612,7 @@ public class Matcher {
 				if(at.canDeriveElementFromTokens(a, false))
 					return true;
 			}
-			
 		}
-		
-		
-		
-		
-		
 		return !hasConstraint;
 	}
 	
@@ -600,4 +658,3 @@ public class Matcher {
 	}
 
 }
-

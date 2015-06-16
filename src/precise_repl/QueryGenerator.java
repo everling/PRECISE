@@ -17,8 +17,10 @@ public class QueryGenerator {
 		
 		
 		
-		
+		//get relations that need to be in the query
 		List<Element> relations = new ArrayList<Element>();
+		
+		
 		//get all relations from relation tokens in tokenization
 		for(Token tr : relationTokens){
 			List<Element> rs = Lexicon.getElements(tr);
@@ -62,16 +64,14 @@ public class QueryGenerator {
 
 		if(relations.size() > 1){
 			//get all join paths
-			List<List<JoinPath>> joinPaths = Lexicon.getJoinPathsV2(relations,whPaired);
+			List<List<JoinPath>> joinPaths = Lexicon.getJoinPathsV2(relations,true);
+			Lexicon.clearMemoizedJPS();
 			
 			for(List<JoinPath> jp : joinPaths){
 				if(print)
 					System.out.println(Arrays.toString(jp.toArray()));
 				String s = generateQuery1(avNodes,relations,attachments,jp,whPaired,print);
-				if(!s.contains("*IJ"))
-					toRet.add(0, s);
-				else
-					toRet.add(s);
+				toRet.add(s);
 
 			}
 
@@ -89,21 +89,6 @@ public class QueryGenerator {
 
 
 	private static String generateQuery1(List<Node> avNodes, List<Element> relations,List<Attachment> attachments,List<JoinPath> joinPath, Element whPaired, boolean print){
-
-		// get all compatile relations from attributes
-		/*List<Element> relations = new ArrayList<Element>();
-
-		for(Node ea : avNodes){
-			if(ea.getElement() != null && ea.getColumn().equals("EA")){
-				for(Element r : ea.getElement().getCompatible()){
-					if(r.getType() == Element.TYPE_RELATION && !relations.contains(r))
-						relations.add(r);
-				}
-			}
-		}
-		*/
-
-
 
 		StringBuilder query = new StringBuilder();
 

@@ -98,7 +98,7 @@ public class Tokenizer {
 		toRemove.clear();
 		
 		//merge duplicate tokens with adjacent indexes
-		for(int i = 0; i < tokens.size(); i++){
+		/*for(int i = 0; i < tokens.size(); i++){
 			for(int j = 0; j < tokens.size(); j++){
 				if( i == j)
 					continue;
@@ -120,7 +120,7 @@ public class Tokenizer {
 					}
 				}
 			}			
-		}
+		}*/
 		
 		
 		for(Token t : toRemove)

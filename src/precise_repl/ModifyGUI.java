@@ -57,6 +57,7 @@ public class ModifyGUI implements Runnable, ActionListener, ListSelectionListene
         List<Element> allElems = Lexicon.getAllElements();
         relAndAtt = new ArrayList<Element>();
         for(Element e : allElems){
+        	//if(e.getType() == Element.TYPE_VALUE && e.getCompatibleOfType(Element.TYPE_RELATION).getName().equals("theater"))
         	if(e.getType() == Element.TYPE_RELATION || e.getType() == Element.TYPE_ATTRIBUTE)
         		relAndAtt.add(e);
         }
@@ -129,7 +130,7 @@ public class ModifyGUI implements Runnable, ActionListener, ListSelectionListene
     public static void main(String[] args){
     	
     	if(args.length != 2){			
-			System.out.println("Usage: wordNetPath database");
+			System.out.println("Usage: path_to_wordnet path_to_lexicon");
 			return;
 		}
 		
@@ -147,7 +148,7 @@ public class ModifyGUI implements Runnable, ActionListener, ListSelectionListene
 			return;
 		}
 		Lexicon.reloadSyntacticMarkers();
-		Lexicon.printMappingsBetter(false);
+		//Lexicon.printMappingsBetter(false);
 		
         ModifyGUI se = new ModifyGUI();
         SwingUtilities.invokeLater(se);

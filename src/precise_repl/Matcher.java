@@ -1,6 +1,7 @@
 package precise_repl;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -253,13 +254,12 @@ public class Matcher {
 		//this is where attachments are enforced
 		List<Node> ea1 = new ArrayList<Node>();
 		for(Node ev : evColumn){
-
-
 			List<Element> candidateAttributes = new ArrayList<Element>();
+
 			for(Element comp : ev.getElement().getCompatible()){
-				
-				
+
 				if(comp.getType() == Element.TYPE_ATTRIBUTE){
+					
 
 					boolean implicitAttribute = !Lexicon.canDeriveElementFromToken(attributeTokens, comp);
 					
@@ -279,27 +279,38 @@ public class Matcher {
 							}
 						//explicit attribute to WH
 						if(!implicitAttribute && respectsAttachmentV2(attachments, ev.getElement(), comp)){
-							if(!candidateAttributes.contains(comp))
-								candidateAttributes.add(comp);
-
+							
+							if(respectsAttachmentRelation(attachments, comp, rel)){
+								if(!candidateAttributes.contains(comp))
+									candidateAttributes.add(comp);
+							}
+							
 						}
 							
 					}
 					else{
+						//if primary key then OK
+						boolean primaryOK = false;
+						List<Element> rels = Lexicon.isKeyValue(ev.getElement());
+						for(Element r : rels){
+							if(comp.getCompatible().contains(r)){
+								candidateAttributes.add(comp);
+								primaryOK = true;
+								
+							}
+						}
+						if(primaryOK)
+							continue;
+						
+						if(!primaryOK && rels.size() > 0)
+							continue;
 						
 						if(implicitAttribute){
 							//check if value is attached to relation
 							Element rel = comp.getCompatibleOfType(Element.TYPE_RELATION);
 							if(rel != null){
-								if(!respectsAttachmentV2(attachments,ev.getElement(),rel)){
-									//if value is key value, only allow primary key attribute
-									String pKey = rel.getPrimaryKey();
-									Element compRel = comp.getCompatibleOfType(Element.TYPE_RELATION);
-									if((comp.getName().equals(pKey) && compRel != null && compRel.equals(rel))){
+								if(respectsAttachmentV2(attachments,ev.getElement(),rel))
 										candidateAttributes.add(comp);
-									}
-										
-								}
 							}
 							
 						}else{
@@ -535,6 +546,40 @@ public class Matcher {
 
 	}
 
+	
+	private static boolean respectsAttachmentRelation(List<Attachment> attachments, Element attribute, Element relation){
+		
+		boolean hasPassed = true;
+
+		
+		for(Attachment at : attachments){
+			
+			if(at.isWH())
+				continue;
+			
+			if(at.canDeriveElementFromTokens(attribute, false)){
+				if(at.tokenRefersToElementOfType(Element.TYPE_RELATION, true)){
+					hasPassed = false;
+					if(at.canDeriveElementFromTokens(relation, true))
+						return true;
+				}
+				
+			}
+			else if(at.canDeriveElementFromTokens(attribute, true)){
+				if(at.tokenRefersToElementOfType(Element.TYPE_RELATION, false)){
+					hasPassed = false;
+					if(at.canDeriveElementFromTokens(relation, false))
+						return true;
+				}
+
+			}
+		}
+		
+		
+		return hasPassed;
+	}
+	
+	
 	/**
 	 * If a value maps to multiple attributes of the same name, and there exists an attachment for that attribute name to a key value,
 	 * only allow the attribute of the key value.

@@ -12,11 +12,10 @@ public class CreateLexicon {
 		
 
 		if(args.length < 3){			
-			System.out.println("Usage: wordNetPath databaseInput databaseOutput");
-			System.out.println("Optional:\n\t-m (manually input synonyms)");
+			System.out.println("Usage: path_to_wordnet path_to_database path_to_lexicon_output");
+			System.out.println("Optional:\n");
 			System.out.println("\t-a (allow synonyms of relations and attributes)");
 			System.out.println("\t-v (allow synonyms of values)");
-			System.out.println("\t-s (lemmatize values)");
 			return;
 		}
 		
@@ -27,17 +26,14 @@ public class CreateLexicon {
 		boolean manual = false;
 		boolean synonymsRelAtt = false;
 		boolean synonymsVal = false;
-		boolean lemmatizeValues = false;
+		boolean lemmatizeValues = true;
 		
 		for(int i = 3; i < args.length; i++){
-			if(args[i].startsWith("-m"))
-				manual = true;
 			if(args[i].startsWith("-a"))
 				synonymsRelAtt = true;
 			if(args[i].startsWith("-v"))
 				synonymsVal = true;
-			if(args[i].startsWith("-s"))
-				lemmatizeValues = true;
+			
 		}
 		
     	try {

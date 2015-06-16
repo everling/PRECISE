@@ -69,6 +69,8 @@ public class Element implements java.io.Serializable{
 	}
 	
 	public List<Element> getCompatible(){
+		if(compatible == null)
+			compatible = new ArrayList<Element>();
 		return compatible;
 	}
 	

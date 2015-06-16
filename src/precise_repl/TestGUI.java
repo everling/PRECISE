@@ -37,7 +37,7 @@ public class TestGUI implements Runnable, ActionListener {
 	"EQ check: checks every possible max-flow solution. should always be checked\n"
 	+"Debug: info to stdout if checked\n"		
 	+"Delete attachment: ignore attachment mappings from stanford parse tree.\n"
-	+"Write manual attachment mappings in the middle field. Format: what_state,state_san francisco";
+	+"Write manual attachment mappings in the middle field. Format: what_state,state_area";
 	
 	
 	
@@ -83,7 +83,7 @@ public class TestGUI implements Runnable, ActionListener {
     	
    
     	if(args.length != 2){			
-			System.out.println("Usage: wordNetPath database");
+			System.out.println("Usage: path_to_wordnet path_to_lexicon");
 			return;
 		}
 		
@@ -101,7 +101,7 @@ public class TestGUI implements Runnable, ActionListener {
 			return;
 		}		
 		Lexicon.reloadSyntacticMarkers();
-    	Lexicon.printMappingsBetter(false);
+    	//Lexicon.printMappingsBetter(false);
         TestGUI se = new TestGUI();
         SwingUtilities.invokeLater(se);
     }

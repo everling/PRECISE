@@ -45,6 +45,7 @@ public class Lexicon implements java.io.Serializable{
 	private static HashMap<Token,List<Element>> tokenToElements;
 	private static HashMap<String,List<Token>> wordToToken;
 	
+	
 	public static List<Token> getTokens(String word){
 		return wordToToken.get(word);
 	}
@@ -288,6 +289,11 @@ public class Lexicon implements java.io.Serializable{
 		System.out.println("Element-Token mappings:\n");
 		
 		for(Element e : elements){
+			
+			if(e.getType() == Element.TYPE_RELATION)
+				System.out.println(e + " key: "+e.getPrimaryKey());
+			
+			
 			if(includeValues || e.getType() != Element.TYPE_VALUE){
 				System.out.println(e);
 				for(Entry<Token, List<Element>> ts : tokenToElements.entrySet()){
@@ -593,6 +599,43 @@ public class Lexicon implements java.io.Serializable{
 		
 	}
 	
+	
+	/*
+	 * Returns a list of relation elements for which v is a primary key value. No foreign keys.
+	 */
+	public static List<Element> isKeyValue(Element v){
+		
+		List<Element> attributes = new ArrayList<Element>();
+		
+		for(Element e : elements){
+			if(e.getType() == Element.TYPE_VALUE){
+				if(e.getName().equals(v.getName())){
+					for(Element a : e.getCompatible()){
+						if(a.getType() == Element.TYPE_ATTRIBUTE)
+							attributes.add(a);
+					}
+				}
+			}
+		}
+		
+		List<Element> relations = new ArrayList<Element>();
+		
+		for(Element a : attributes){
+			for(Element r : a.getCompatible()){
+				if(r.getType() == Element.TYPE_RELATION){
+					String pKey = r.getPrimaryKey();
+					if(pKey.equals(a.getName()))
+						relations.add(r);
+				}
+					
+			}
+		}
+		
+		return relations;
+		
+		
+	}
+	
 	public static boolean canDeriveElementOfTypeFromToken(List<Token> tokens, int type){
 		for(Token t : tokens){
 			List<Element> elems = Lexicon.getElements(t);
@@ -632,6 +675,32 @@ public class Lexicon implements java.io.Serializable{
 		return false;
 	}
 	
+	
+	private static List<List<Element>> jpMemoization;
+
+	
+	private static boolean addMemoized(List<Element> relations){
+				
+		if(jpMemoization == null){
+			jpMemoization = new ArrayList<List<Element>>();
+			jpMemoization.add(relations);
+			return false;
+		}
+		
+		for(List<Element> mem : jpMemoization){
+			if(mem.containsAll(relations) && relations.containsAll(mem))
+				return true;
+		}
+		
+		jpMemoization.add(relations);
+		
+		return false;
+		
+	}
+	
+	public static void clearMemoizedJPS(){
+		jpMemoization = new ArrayList<List<Element>>();
+	}
 	
 	public static class JoinPath implements java.io.Serializable{
 		/**
@@ -722,15 +791,18 @@ public class Lexicon implements java.io.Serializable{
 			if(relAndAtt.length != 2)
 				continue;
 			
-			String relation = relAndAtt[0];
-			Token attribute = Tokenizer.tokenizeString(relAndAtt[1].toLowerCase()).get(0);
+			String relation = relAndAtt[0].toLowerCase().trim();
+			String attrib = relAndAtt[1].toLowerCase().trim();
 			
-			EA:
-			for(Element ea : Lexicon.getElements(attribute)){
-				for(Element r : ea.getCompatible()){
-					if(r.getType() == Element.TYPE_RELATION && r.getName().equals(relation)){
-						jpath.add(ea);
-						break EA;
+			for(Element ea : elements){
+				if(ea.getType() == Element.TYPE_ATTRIBUTE){
+					if(ea.getName().equals(attrib)){
+						for(Element r : ea.getCompatible()){
+							if(r.getType() == Element.TYPE_RELATION && r.getName().equals(relation)){
+								jpath.add(ea);
+
+							}
+						}
 					}
 				}
 			}
@@ -753,10 +825,17 @@ public class Lexicon implements java.io.Serializable{
 	}
 	
 	
-	public static List<List<JoinPath>> getJoinPathsV2(List<Element> relations, Element select){
+	
+	
+	
+	public static List<List<JoinPath>> getJoinPathsV2(List<Element> relations, boolean topLevel){
 		
 		List<List<JoinPath>> toRet = new ArrayList<List<JoinPath>>();
 
+		if(relations.size() > 5){
+			//TODO support higher
+			return toRet;
+		}
 		
 		//get all join paths that involve the relations and don't involve other relations
 		Set<JoinPath> possible = new HashSet<JoinPath>();
@@ -788,7 +867,7 @@ public class Lexicon implements java.io.Serializable{
 			while(itp.hasNext()){
 				JoinPath j = itp.next();
 				for(int i = 0; i < relations.size(); i++){
-					if(j.hasRelation(relations.get(i)))// && (!j.attribute0.equals(select)) && (!j.attribute1.equals(select)))
+					if(j.hasRelation(relations.get(i)))
 						isRepresented[i] = true;
 				}
 			}
@@ -802,7 +881,52 @@ public class Lexicon implements java.io.Serializable{
 				toRet.add(new ArrayList<JoinPath>(sjp));
 			
 			
-		}		
+		}
+		
+		if(toRet.size() == 0 && topLevel){
+			
+			//no join path of just those relations, need to include another relation to bridge between
+			
+			List<Element> relationsNotInYet = new ArrayList<Element>();
+			for(Element e : elements){
+				if(e.getType() == Element.TYPE_RELATION && !relations.contains(e))
+					relationsNotInYet.add(e);
+			}
+			
+			for(Element rn : relationsNotInYet){
+				List<Element> newRel = new ArrayList<Element>(relations);
+				newRel.add(rn);
+				if(!addMemoized(newRel)){
+					List<List<JoinPath>> tryRet = getJoinPathsV2(newRel, false);
+					for(List<JoinPath> jpp : tryRet){
+						toRet.add(jpp);
+					}
+				}
+			}
+			
+			if(toRet.size() == 0){
+				//still empty, do recursion
+				// TODO better
+				for(Element rn : relationsNotInYet){
+					List<Element> newRel = new ArrayList<Element>(relations);
+					newRel.add(rn);
+					List<List<JoinPath>> tryRet = getJoinPathsV2(newRel, true);
+					for(List<JoinPath> jpp : tryRet){
+						toRet.add(jpp);
+					}
+					
+				}
+				
+				
+			}
+			
+			
+			
+		}
+		
+		
+		
+		
 		return toRet;
 		
 	}

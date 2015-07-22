@@ -13,7 +13,7 @@ v0.1
 
 
 <b>To improve</b>
-*Word indexing
+* Word indexing
 
 
 

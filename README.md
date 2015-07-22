@@ -13,8 +13,7 @@ v0.1
 
 
 <b>To improve</b>
-* Parser class. Use manual attachment mappings.
-* Lexicon generation. Currently hardcoded to work with Geobase file.
+*Word indexing
 
 
 
